@@ -22,14 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Heart,
-  Home,
-  RefreshCw,
-  Settings2,
-  ShoppingCart,
-  Trash2,
-} from "lucide-react";
+import { Heart, RefreshCw, Settings2, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -208,7 +201,6 @@ function MealCell({
 interface ListPanelProps {
   storageKey: string;
   title: string;
-  icon: React.ReactNode;
   ocidPrefix: string;
   toastLabel: string;
 }
@@ -216,7 +208,6 @@ interface ListPanelProps {
 function ListPanel({
   storageKey,
   title,
-  icon,
   ocidPrefix,
   toastLabel,
 }: ListPanelProps) {
@@ -264,13 +255,13 @@ function ListPanel({
     toast.success(`${toastLabel} cleared!`);
   };
 
-  const handleClearNotSelected = () => {
+  const handleClearTicked = () => {
     setItems((prev) => {
-      const updated = prev.filter((item) => item.purchased);
+      const updated = prev.filter((item) => !item.purchased);
       persist(updated);
       return updated;
     });
-    toast.success(`Unticked items removed from ${toastLabel.toLowerCase()}!`);
+    toast.success(`Ticked items removed from ${toastLabel.toLowerCase()}!`);
   };
 
   return (
@@ -281,67 +272,56 @@ function ListPanel({
       className="rounded-sm overflow-hidden"
       data-ocid={`${ocidPrefix}.panel`}
     >
-      {/* Section Header */}
+      {/* Section Header with action buttons — at the very top */}
       <div className="leopard-bg px-4 py-3 flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2.5">
-          <span className="text-amber-100 w-5 h-5 flex items-center">
-            {icon}
-          </span>
-          <h2
-            className="font-bold text-amber-100 leading-none tracking-tight"
-            style={{ fontSize: "clamp(1rem, 3vw, 1.4rem)" }}
-          >
-            {title}
-          </h2>
-        </div>
-
-        {/* Ornamental motif */}
-        <span className="text-amber-200/60 text-lg select-none hidden sm:inline">
-          ❧
-        </span>
+        <h2
+          className="font-bold text-amber-100 leading-none tracking-tight"
+          style={{ fontSize: "clamp(1rem, 3vw, 1.4rem)" }}
+        >
+          {title}
+        </h2>
 
         {/* Action buttons */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          {/* Clear All Not Selected */}
+          {/* Clear Ticked */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2.5 rounded-sm text-xs text-amber-100/70 hover:bg-black/20 hover:text-amber-100 gap-1 transition-colors"
-                data-ocid={`${ocidPrefix}.clear_not_selected_button`}
-                aria-label={`Clear unticked items from ${title}`}
+                className="h-7 px-2.5 rounded-sm text-xs text-amber-100/70 hover:bg-black/20 hover:text-amber-100 transition-colors"
+                data-ocid={`${ocidPrefix}.clear_ticked_button`}
+                aria-label={`Clear ticked items from ${title}`}
               >
-                <Trash2 className="w-3 h-3" />
-                <span>Clear Unticked</span>
+                Clear Ticked
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent
               className="sm:max-w-md rounded-xl border-border"
-              data-ocid={`${ocidPrefix}.clear_not_selected.dialog`}
+              data-ocid={`${ocidPrefix}.clear_ticked.dialog`}
             >
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-xl text-foreground">
-                  Remove all unticked items?
+                  Remove all ticked items?
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-muted-foreground">
-                  This will remove all items that have not been ticked. Ticked
+                  This will remove all items that have been ticked. Unticked
                   items will be kept.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="gap-2">
                 <AlertDialogCancel
                   className="rounded-lg"
-                  data-ocid={`${ocidPrefix}.clear_not_selected.cancel_button`}
+                  data-ocid={`${ocidPrefix}.clear_ticked.cancel_button`}
                 >
                   Cancel
                 </AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={handleClearNotSelected}
+                  onClick={handleClearTicked}
                   className="rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  data-ocid={`${ocidPrefix}.clear_not_selected.confirm_button`}
+                  data-ocid={`${ocidPrefix}.clear_ticked.confirm_button`}
                 >
-                  Remove Unticked
+                  Remove Ticked
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -353,12 +333,11 @@ function ListPanel({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2.5 rounded-sm text-xs text-amber-100/70 hover:bg-black/20 hover:text-amber-100 gap-1 transition-colors"
+                className="h-7 px-2.5 rounded-sm text-xs text-amber-100/70 hover:bg-black/20 hover:text-amber-100 transition-colors"
                 data-ocid={`${ocidPrefix}.clear_button`}
                 aria-label={`Clear all items from ${title}`}
               >
-                <Trash2 className="w-3 h-3" />
-                <span>Clear All</span>
+                Clear All
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent
@@ -394,7 +373,7 @@ function ListPanel({
         </div>
       </div>
 
-      {/* Add item input */}
+      {/* Add item input — below the header */}
       <div className="bg-muted/30 px-4 py-3">
         <input
           ref={inputRef}
@@ -414,54 +393,43 @@ function ListPanel({
 
       {/* Items list */}
       <div className="bg-card/80">
-        {items.length === 0 ? (
-          <div
-            className="flex items-center justify-center py-10 px-4"
-            data-ocid={`${ocidPrefix}.empty_state`}
-          >
-            <p className="text-sm text-foreground/40 italic">
-              Your list is empty
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-border/40">
-            <AnimatePresence initial={false}>
-              {items.map((item, index) => (
-                <motion.li
-                  key={item.id}
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-foreground/5 ${item.purchased ? "shopping-item-purchased" : ""}`}
-                  data-ocid={`${ocidPrefix}.item.${index + 1}`}
+        <ul className="divide-y divide-border/40">
+          <AnimatePresence initial={false}>
+            {items.map((item, index) => (
+              <motion.li
+                key={item.id}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-foreground/5 ${item.purchased ? "shopping-item-purchased" : ""}`}
+                data-ocid={`${ocidPrefix}.item.${index + 1}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={item.purchased}
+                  onChange={() => togglePurchased(item.id)}
+                  className="shopping-checkbox"
+                  aria-label={`Mark "${item.text}" as done`}
+                  data-ocid={`${ocidPrefix}.checkbox.${index + 1}`}
+                />
+                <span
+                  className="shopping-item-text text-sm flex-1 select-text cursor-default"
+                  style={{
+                    textDecoration: item.purchased ? "line-through" : "none",
+                    opacity: item.purchased ? 0.45 : 1,
+                    color: item.purchased
+                      ? "oklch(var(--muted-foreground))"
+                      : "oklch(var(--foreground))",
+                    transition: "opacity 0.2s ease, color 0.2s ease",
+                  }}
                 >
-                  <input
-                    type="checkbox"
-                    checked={item.purchased}
-                    onChange={() => togglePurchased(item.id)}
-                    className="shopping-checkbox"
-                    aria-label={`Mark "${item.text}" as done`}
-                    data-ocid={`${ocidPrefix}.checkbox.${index + 1}`}
-                  />
-                  <span
-                    className="shopping-item-text text-sm flex-1 select-text cursor-default"
-                    style={{
-                      textDecoration: item.purchased ? "line-through" : "none",
-                      opacity: item.purchased ? 0.45 : 1,
-                      color: item.purchased
-                        ? "oklch(var(--muted-foreground))"
-                        : "oklch(var(--foreground))",
-                      transition: "opacity 0.2s ease, color 0.2s ease",
-                    }}
-                  >
-                    {item.text}
-                  </span>
-                </motion.li>
-              ))}
-            </AnimatePresence>
-          </ul>
-        )}
+                  {item.text}
+                </span>
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </ul>
       </div>
     </motion.div>
   );
@@ -553,7 +521,7 @@ export default function App() {
     d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div className="min-h-screen flex flex-col page-botanical">
+    <div className="min-h-screen flex flex-col page-botanical overflow-x-hidden">
       <Toaster position="top-right" />
 
       {/* ── Utility bar ────────────────────────────────────────────────── */}
@@ -639,29 +607,42 @@ export default function App() {
       </div>
 
       {/* ── Main Content ───────────────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-xl mx-auto px-3 pb-10 flex flex-col">
+      <main className="flex-1 w-full max-w-xl mx-auto px-3 pb-10 flex flex-col overflow-x-hidden">
         {/* ── Tab System ─────────────────────────────────────────────────── */}
-        <Tabs defaultValue="planner" className="flex flex-col flex-1 gap-0">
+        <Tabs
+          defaultValue="planner"
+          className="flex flex-col flex-1 gap-0 w-full overflow-x-hidden min-w-0 [&>[data-slot=tabs-content]]:mt-0 [&>[data-slot=tabs-content]]:pt-0"
+        >
           {/* Sticky tab bar */}
-          <div className="sticky top-0 z-20 bg-primary/60 backdrop-blur-sm border-b border-amber-200/10 py-2 px-1">
-            <TabsList className="w-full bg-transparent border-none p-0 h-auto gap-1">
+          <div className="sticky top-0 z-20 pt-2 pb-0 px-1">
+            <TabsList className="w-full bg-transparent border-none shadow-none p-0 h-auto gap-0">
               <TabsTrigger
                 value="planner"
-                className="flex-1 text-amber-100/70 data-[state=active]:text-amber-100 data-[state=active]:bg-amber-200/15 data-[state=active]:border-b-2 data-[state=active]:border-amber-300/60 rounded-sm px-3 py-2 text-sm tracking-wide uppercase font-semibold transition-all"
+                className="flex-1 min-w-0 bg-transparent text-amber-100/60 data-[state=active]:text-amber-100 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-300/80 border-b-2 border-transparent rounded-none px-1 py-2 text-xs tracking-widest uppercase font-semibold transition-all"
+                style={{
+                  fontFamily: '"GFS Didot", Didot, "Bodoni MT", Georgia, serif',
+                }}
                 data-ocid="tabs.planner.tab"
               >
                 Planner
               </TabsTrigger>
               <TabsTrigger
                 value="shopping"
-                className="flex-1 text-amber-100/70 data-[state=active]:text-amber-100 data-[state=active]:bg-amber-200/15 data-[state=active]:border-b-2 data-[state=active]:border-amber-300/60 rounded-sm px-3 py-2 text-sm tracking-wide uppercase font-semibold transition-all"
+                className="flex-1 min-w-0 bg-transparent text-amber-100/60 data-[state=active]:text-amber-100 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-300/80 border-b-2 border-transparent rounded-none px-1 py-2 text-xs tracking-widest uppercase font-semibold transition-all"
+                style={{
+                  fontFamily: '"GFS Didot", Didot, "Bodoni MT", Georgia, serif',
+                }}
                 data-ocid="tabs.shopping.tab"
               >
-                Shopping List
+                Shopping
               </TabsTrigger>
               <TabsTrigger
                 value="house"
-                className="flex-1 text-amber-100/70 data-[state=active]:text-amber-100 data-[state=active]:bg-amber-200/15 data-[state=active]:border-b-2 data-[state=active]:border-amber-300/60 rounded-sm px-3 py-2 text-sm tracking-wide uppercase font-semibold transition-all"
+                className="flex-1 min-w-0 bg-transparent text-amber-100/60 data-[state=active]:text-amber-100 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-300/80 border-b-2 border-transparent rounded-none px-1 py-2 text-xs tracking-widest uppercase font-semibold transition-all"
+                style={{
+                  fontFamily: '"GFS Didot", Didot, "Bodoni MT", Georgia, serif',
+                  fontSize: "0.6rem",
+                }}
                 data-ocid="tabs.house.tab"
               >
                 For the House
@@ -670,16 +651,21 @@ export default function App() {
           </div>
 
           {/* ── Planner Tab ── */}
-          <TabsContent value="planner" className="flex flex-col gap-4 pt-4">
+          <TabsContent
+            value="planner"
+            className="flex flex-col gap-1.5 pt-3 w-full overflow-x-hidden"
+          >
             {/* Names header row */}
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.05 }}
-              className="leopard-bg rounded-sm overflow-hidden"
+              className="leopard-bg rounded-sm overflow-hidden w-full"
               data-ocid="meal.table"
             >
-              <div className="flex items-stretch">
+              <div className="flex items-stretch w-full">
+                {/* Spacer to match the 72px meal-type gutter */}
+                <div className="shrink-0" style={{ width: "72px" }} />
                 {/* Person 1 name */}
                 <div className="flex-1 flex items-center justify-center px-3 py-4 border-r border-black/20">
                   <span
@@ -712,19 +698,20 @@ export default function App() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.08 + dayIndex * 0.04 }}
-                className="rounded-sm overflow-hidden"
+                className="rounded-sm overflow-hidden w-full overflow-x-hidden"
                 data-ocid={`meal.${dayIndex}.card`}
               >
                 {/* Day header — transparent, shows leopard background */}
-                <div className="leopard-bg px-4 py-2.5 flex items-center justify-center">
+                <div className="leopard-bg px-3 py-1.5 flex items-center justify-center w-full">
                   <h3
-                    className="font-bold tracking-widest text-amber-100 uppercase text-center select-none"
-                    style={{
-                      fontSize: "clamp(0.85rem, 2.5vw, 1.05rem)",
-                      letterSpacing: "0.18em",
-                    }}
+                    className="font-bold text-amber-100 uppercase select-none w-full flex justify-between"
+                    style={{ fontSize: "clamp(1rem, 4vw, 1.3rem)" }}
+                    aria-label={day}
                   >
-                    {day}
+                    {day.split("").map((char, i) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: letters in a fixed string, order never changes
+                      <span key={i}>{char}</span>
+                    ))}
                   </h3>
                 </div>
 
@@ -735,12 +722,12 @@ export default function App() {
                     return (
                       <div
                         key={mealType}
-                        className={`flex items-start gap-0 ${!isLast ? "border-b border-border/20" : ""}`}
+                        className={`flex items-center gap-0 w-full min-w-0 ${!isLast ? "border-b border-border/20" : ""}`}
                         data-ocid={`meal.${dayIndex}.${mealTypeIndex}.row`}
                       >
                         {/* Meal icon + label gutter — widened so "Breakfast" fits */}
                         <div
-                          className="flex flex-col items-center justify-start gap-0.5 pt-2.5 pb-2 shrink-0"
+                          className="flex flex-col items-center justify-center gap-0.5 py-2 shrink-0"
                           style={{ width: "72px" }}
                         >
                           <span className="text-base leading-none select-none">
@@ -750,7 +737,7 @@ export default function App() {
                         </div>
 
                         {/* Person 1 textarea */}
-                        <div className="flex-1 border-l border-border/20">
+                        <div className="flex-1 min-w-0 border-l border-border/20">
                           <MealCell
                             dayIndex={dayIndex}
                             mealTypeIndex={mealTypeIndex}
@@ -765,7 +752,7 @@ export default function App() {
                         </div>
 
                         {/* Person 2 textarea */}
-                        <div className="flex-1 border-l border-border/20">
+                        <div className="flex-1 min-w-0 border-l border-border/20">
                           <MealCell
                             dayIndex={dayIndex}
                             mealTypeIndex={mealTypeIndex}
@@ -787,22 +774,28 @@ export default function App() {
           </TabsContent>
 
           {/* ── Shopping List Tab ── */}
-          <TabsContent value="shopping" className="flex flex-col pt-4">
+          <TabsContent
+            value="shopping"
+            className="flex flex-col mt-0 pt-0 [&]:mt-0 [&]:pt-0"
+            style={{ marginTop: 0, paddingTop: 0 }}
+          >
             <ListPanel
               storageKey={SHOPPING_KEY}
               title="Shopping List"
-              icon={<ShoppingCart className="w-5 h-5" />}
               ocidPrefix="shopping"
               toastLabel="Shopping list"
             />
           </TabsContent>
 
           {/* ── For the House Tab ── */}
-          <TabsContent value="house" className="flex flex-col pt-4">
+          <TabsContent
+            value="house"
+            className="flex flex-col mt-0 pt-0 [&]:mt-0 [&]:pt-0"
+            style={{ marginTop: 0, paddingTop: 0 }}
+          >
             <ListPanel
               storageKey={HOUSE_KEY}
               title="For the House"
-              icon={<Home className="w-5 h-5" />}
               ocidPrefix="house"
               toastLabel="House list"
             />

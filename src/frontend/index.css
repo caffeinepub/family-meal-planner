@@ -79,6 +79,8 @@
     @apply bg-background text-foreground;
     font-family: "GFS Didot", Didot, "Bodoni MT", Georgia, serif;
     font-size: 16px;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -137,7 +139,7 @@
   font-family: "GFS Didot", Didot, "Bodoni MT", Georgia, serif;
   font-size: 0.875rem;
   color: oklch(0.94 0.02 85);
-  padding: 0.5rem 0.6rem;
+  padding: 0.75rem 0.6rem;
   border-radius: 0.375rem;
   transition: background 0.15s ease;
   min-height: 72px;
@@ -170,6 +172,17 @@
   color: oklch(0.72 0.14 80);
   line-height: 1;
   white-space: nowrap;
+}
+
+/* Remove any default gap between tab bar and tab content */
+[role="tabpanel"] {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Kill the flex gap on the Tabs root so list and content sit flush */
+[data-slot="tabs"] {
+  gap: 0 !important;
 }
 
 /* Shopping list item styles */
