@@ -127,11 +127,32 @@ function MealCell({
   onSave,
 }: MealCellProps) {
   const [localValue, setLocalValue] = useState(value);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const key = mealKey(dayIndex, mealTypeIndex, personIndex);
 
   useEffect(() => {
     setLocalValue(value);
   }, [value]);
+
+  // Auto-adjust height and vertical padding to keep text centred
+  const adjustLayout = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    // Reset to auto so scrollHeight reflects actual content
+    el.style.height = "auto";
+    const contentH = el.scrollHeight;
+    const wrapperH = el.parentElement?.clientHeight ?? 84;
+    const targetH = Math.max(contentH, wrapperH);
+    el.style.height = `${targetH}px`;
+    const vPad = Math.max(8, (wrapperH - contentH) / 2);
+    el.style.paddingTop = `${vPad}px`;
+    el.style.paddingBottom = `${vPad}px`;
+  }, []);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: localValue triggers layout recalc when content changes
+  useEffect(() => {
+    adjustLayout();
+  }, [localValue, adjustLayout]);
 
   const handleBlur = () => {
     if (localValue !== value) {
@@ -140,16 +161,21 @@ function MealCell({
   };
 
   return (
-    <textarea
-      className="meal-input"
-      rows={3}
-      value={localValue}
-      onChange={(e) => setLocalValue(e.target.value)}
-      onBlur={handleBlur}
-      placeholder={placeholder}
-      aria-label={`${DAYS[dayIndex]} ${MEAL_TYPES[mealTypeIndex]} for person ${personIndex + 1}`}
-      data-ocid={`meal.${dayIndex}.${mealTypeIndex}.${personIndex}.input`}
-    />
+    <div className="meal-input-wrapper">
+      <textarea
+        ref={textareaRef}
+        className="meal-input"
+        rows={1}
+        value={localValue}
+        onChange={(e) => {
+          setLocalValue(e.target.value);
+        }}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        aria-label={`${DAYS[dayIndex]} ${MEAL_TYPES[mealTypeIndex]} for person ${personIndex + 1}`}
+        data-ocid={`meal.${dayIndex}.${mealTypeIndex}.${personIndex}.input`}
+      />
+    </div>
   );
 }
 
@@ -902,7 +928,7 @@ export default function App() {
                         </div>
 
                         {/* Person 1 textarea */}
-                        <div className="flex-1 min-w-0 border-l border-border/20 flex items-center">
+                        <div className="flex-1 min-w-0 border-l border-border/20">
                           <MealCell
                             dayIndex={dayIndex}
                             mealTypeIndex={mealTypeIndex}
@@ -917,7 +943,7 @@ export default function App() {
                         </div>
 
                         {/* Person 2 textarea */}
-                        <div className="flex-1 min-w-0 border-l border-border/20 flex items-center">
+                        <div className="flex-1 min-w-0 border-l border-border/20">
                           <MealCell
                             dayIndex={dayIndex}
                             mealTypeIndex={mealTypeIndex}
