@@ -1,3 +1,4 @@
+import type { backendInterface } from "@/backend.d";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useActor } from "@/hooks/useActor";
 import { Heart, RefreshCw, Settings2, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -43,9 +45,6 @@ interface ShoppingItem {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "mealPlan";
-const SHOPPING_KEY = "shoppingList";
-const HOUSE_KEY = "houseList";
 const POLL_INTERVAL = 5000;
 const NOTIFY_DEBOUNCE_MS = 3000;
 
@@ -68,45 +67,6 @@ const MEAL_ICONS: Record<string, string> = {
   Snack: "🥀",
 };
 
-// ─── Storage helpers ──────────────────────────────────────────────────────────
-
-function loadMealPlan(): MealPlan {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<MealPlan>;
-      return {
-        person1Name: parsed.person1Name ?? "Husband",
-        person2Name: parsed.person2Name ?? "Wife",
-        meals: parsed.meals ?? {},
-      };
-    }
-  } catch {
-    // ignore parse errors
-  }
-  return { person1Name: "Husband", person2Name: "Wife", meals: {} };
-}
-
-function saveMealPlan(plan: MealPlan): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(plan));
-}
-
-function loadList(key: string): ShoppingItem[] {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw) {
-      return JSON.parse(raw) as ShoppingItem[];
-    }
-  } catch {
-    // ignore parse errors
-  }
-  return [];
-}
-
-function saveList(key: string, items: ShoppingItem[]): void {
-  localStorage.setItem(key, JSON.stringify(items));
-}
-
 // ─── Meal key helper ──────────────────────────────────────────────────────────
 
 function mealKey(
@@ -120,7 +80,6 @@ function mealKey(
 // ─── useChangeNotify hook — debounced partner notification ────────────────────
 
 function useChangeNotify(serialised: string, label: string) {
-  // Track first render without adding refs to dependency array
   const stateRef = useRef({
     mounted: false,
     timer: null as ReturnType<typeof setTimeout> | null,
@@ -130,13 +89,11 @@ function useChangeNotify(serialised: string, label: string) {
   useEffect(() => {
     const state = stateRef.current;
 
-    // Skip the very first mount
     if (!state.mounted) {
       state.mounted = true;
       return;
     }
 
-    // Clear any pending timer and start a new debounce
     if (state.timer) clearTimeout(state.timer);
     state.timer = setTimeout(() => {
       toast.info(`${label} updated — your partner will be notified`, {
@@ -196,36 +153,65 @@ function MealCell({
   );
 }
 
+// ─── Loading screen ──────────────────────────────────────────────────────────
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center page-botanical">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col items-center gap-4"
+      >
+        <div
+          className="text-amber-100/80 text-xl tracking-widest uppercase"
+          style={{
+            fontFamily: '"GFS Didot", Didot, "Bodoni MT", Georgia, serif',
+          }}
+        >
+          Loading…
+        </div>
+        <div className="w-8 h-0.5 bg-amber-300/50 animate-pulse" />
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Generic list component (used for Shopping List & For the House) ──────────
 
 interface ListPanelProps {
-  storageKey: string;
+  items: ShoppingItem[];
   title: string;
   ocidPrefix: string;
   toastLabel: string;
+  onAdd: (id: string, text: string) => Promise<void>;
+  onToggle: (id: string) => Promise<void>;
+  onClearAll: () => Promise<void>;
+  onClearTicked: () => Promise<void>;
+  onOptimisticUpdate: (
+    updater: (prev: ShoppingItem[]) => ShoppingItem[],
+  ) => void;
 }
 
 function ListPanel({
-  storageKey,
+  items,
   title,
   ocidPrefix,
   toastLabel,
+  onAdd,
+  onToggle,
+  onClearAll,
+  onClearTicked,
+  onOptimisticUpdate,
 }: ListPanelProps) {
-  const [items, setItems] = useState<ShoppingItem[]>(() =>
-    loadList(storageKey),
-  );
   const [inputValue, setInputValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Debounced partner notification
   useChangeNotify(JSON.stringify(items), toastLabel);
 
-  const persist = (updated: ShoppingItem[]) => {
-    saveList(storageKey, updated);
-    return updated;
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       const trimmed = inputValue.trim();
@@ -235,33 +221,61 @@ function ListPanel({
         text: trimmed,
         purchased: false,
       };
-      setItems((prev) => persist([...prev, newItem]));
+      // Optimistic update
+      onOptimisticUpdate((prev) => [...prev, newItem]);
       setInputValue("");
+      try {
+        await onAdd(newItem.id, newItem.text);
+      } catch {
+        // Roll back on error
+        onOptimisticUpdate((prev) => prev.filter((i) => i.id !== newItem.id));
+        toast.error("Could not save — please try again");
+      }
     }
   };
 
-  const togglePurchased = (id: string) => {
-    setItems((prev) =>
-      persist(
+  const handleToggle = async (id: string) => {
+    // Optimistic update
+    onOptimisticUpdate((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, purchased: !item.purchased } : item,
+      ),
+    );
+    try {
+      await onToggle(id);
+    } catch {
+      // Roll back on error
+      onOptimisticUpdate((prev) =>
         prev.map((item) =>
           item.id === id ? { ...item, purchased: !item.purchased } : item,
         ),
-      ),
-    );
+      );
+      toast.error("Could not save — please try again");
+    }
   };
 
-  const handleClearAll = () => {
-    setItems(persist([]));
-    toast.success(`${toastLabel} cleared!`);
+  const handleClearAll = async () => {
+    const prevItems = [...items];
+    onOptimisticUpdate(() => []);
+    try {
+      await onClearAll();
+      toast.success(`${toastLabel} cleared!`);
+    } catch {
+      onOptimisticUpdate(() => prevItems);
+      toast.error("Could not save — please try again");
+    }
   };
 
-  const handleClearTicked = () => {
-    setItems((prev) => {
-      const updated = prev.filter((item) => !item.purchased);
-      persist(updated);
-      return updated;
-    });
-    toast.success(`Ticked items removed from ${toastLabel.toLowerCase()}!`);
+  const handleClearTicked = async () => {
+    const prevItems = [...items];
+    onOptimisticUpdate((prev) => prev.filter((item) => !item.purchased));
+    try {
+      await onClearTicked();
+      toast.success(`Ticked items removed from ${toastLabel.toLowerCase()}!`);
+    } catch {
+      onOptimisticUpdate(() => prevItems);
+      toast.error("Could not save — please try again");
+    }
   };
 
   return (
@@ -408,7 +422,7 @@ function ListPanel({
                 <input
                   type="checkbox"
                   checked={item.purchased}
-                  onChange={() => togglePurchased(item.id)}
+                  onChange={() => handleToggle(item.id)}
                   className="shopping-checkbox"
                   aria-label={`Mark "${item.text}" as done`}
                   data-ocid={`${ocidPrefix}.checkbox.${index + 1}`}
@@ -438,54 +452,150 @@ function ListPanel({
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [plan, setPlan] = useState<MealPlan>(loadMealPlan);
+  const { actor: _actor, isFetching } = useActor();
+  // Cast to the full backend interface (backend.d.ts is the canonical contract)
+  const actor = _actor as unknown as backendInterface | null;
+
+  // ── Data state ─────────────────────────────────────────────────────────────
+  const [plan, setPlan] = useState<MealPlan>({
+    person1Name: "Husband",
+    person2Name: "Wife",
+    meals: {},
+  });
+  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
+  const [houseItems, setHouseItems] = useState<ShoppingItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // ── UI state ───────────────────────────────────────────────────────────────
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editName1, setEditName1] = useState(plan.person1Name);
   const [editName2, setEditName2] = useState(plan.person2Name);
   const [lastSynced, setLastSynced] = useState<Date>(new Date());
-  const prevPlanRef = useRef<string>(JSON.stringify(plan));
+
+  // ── Tracking ───────────────────────────────────────────────────────────────
+  // Track the last known lastModified value for change detection
+  const lastModifiedRef = useRef<bigint | null>(null);
+  // Flag to avoid showing "Updated by your partner" when we made the change
+  const localWritePendingRef = useRef(false);
 
   // Debounced partner notification for the meal plan
   useChangeNotify(JSON.stringify(plan.meals), "Meal plan");
 
-  // ── Polling ──────────────────────────────────────────────────────────────
-  const poll = useCallback(() => {
-    const fresh = loadMealPlan();
-    const freshStr = JSON.stringify(fresh);
-    if (freshStr !== prevPlanRef.current) {
-      setPlan(fresh);
-      prevPlanRef.current = freshStr;
-      setLastSynced(new Date());
+  // ── Initial data load ──────────────────────────────────────────────────────
+  const fetchAllData = useCallback(async (actorInstance: backendInterface) => {
+    const [mealResult, shopping, house] = await Promise.all([
+      actorInstance.getMealPlan(),
+      actorInstance.getShoppingList(),
+      actorInstance.getHouseList(),
+    ]);
+
+    const mealsMap: Record<string, string> = {};
+    for (const [key, value] of mealResult.meals) {
+      mealsMap[key] = value;
     }
+
+    setPlan({
+      person1Name: mealResult.person1Name,
+      person2Name: mealResult.person2Name,
+      meals: mealsMap,
+    });
+    setShoppingItems(shopping);
+    setHouseItems(house);
   }, []);
 
   useEffect(() => {
+    if (!actor || isFetching) return;
+
+    let cancelled = false;
+
+    const loadInitial = async () => {
+      try {
+        // Get initial lastModified and all data in parallel
+        const [lastMod] = await Promise.all([
+          actor.getLastModified(),
+          fetchAllData(actor),
+        ]);
+        if (!cancelled) {
+          lastModifiedRef.current = lastMod;
+          setIsLoading(false);
+          setLastSynced(new Date());
+        }
+      } catch {
+        if (!cancelled) {
+          toast.error("Could not load data — please refresh");
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadInitial();
+    return () => {
+      cancelled = true;
+    };
+  }, [actor, isFetching, fetchAllData]);
+
+  // ── Polling for remote changes ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!actor || isLoading) return;
+
+    const poll = async () => {
+      try {
+        const lastMod = await actor.getLastModified();
+        if (lastMod !== lastModifiedRef.current) {
+          lastModifiedRef.current = lastMod;
+          await fetchAllData(actor);
+          setLastSynced(new Date());
+
+          // Only show "Updated by your partner" if the local user didn't just write
+          if (!localWritePendingRef.current) {
+            toast.info("Updated by your partner", { duration: 3000 });
+          }
+          localWritePendingRef.current = false;
+        }
+      } catch {
+        // Silently ignore poll errors — will retry next interval
+      }
+    };
+
     const id = setInterval(poll, POLL_INTERVAL);
     return () => clearInterval(id);
-  }, [poll]);
+  }, [actor, isLoading, fetchAllData]);
 
   // ── Save a meal ────────────────────────────────────────────────────────────
-  const handleSaveMeal = useCallback((key: string, value: string) => {
-    setPlan((prev) => {
-      const updated: MealPlan = {
+  const handleSaveMeal = useCallback(
+    async (key: string, value: string) => {
+      // Optimistic update
+      setPlan((prev) => ({
         ...prev,
         meals: { ...prev.meals, [key]: value },
-      };
-      saveMealPlan(updated);
-      prevPlanRef.current = JSON.stringify(updated);
-      return updated;
-    });
-  }, []);
+      }));
+      localWritePendingRef.current = true;
+      try {
+        await actor?.setMeal(key, value);
+      } catch {
+        toast.error("Could not save — please try again");
+        // Roll back
+        setPlan((prev) => ({
+          ...prev,
+          meals: { ...prev.meals, [key]: prev.meals[key] ?? "" },
+        }));
+      }
+    },
+    [actor],
+  );
 
   // ── Clear week ─────────────────────────────────────────────────────────────
-  const handleClearWeek = () => {
-    setPlan((prev) => {
-      const updated: MealPlan = { ...prev, meals: {} };
-      saveMealPlan(updated);
-      prevPlanRef.current = JSON.stringify(updated);
-      return updated;
-    });
-    toast.success("Week cleared!");
+  const handleClearWeek = async () => {
+    const prevMeals = { ...plan.meals };
+    setPlan((prev) => ({ ...prev, meals: {} }));
+    localWritePendingRef.current = true;
+    try {
+      await actor?.clearMeals();
+      toast.success("Week cleared!");
+    } catch {
+      setPlan((prev) => ({ ...prev, meals: prevMeals }));
+      toast.error("Could not save — please try again");
+    }
   };
 
   // ── Settings ───────────────────────────────────────────────────────────────
@@ -495,30 +605,85 @@ export default function App() {
     setSettingsOpen(true);
   };
 
-  const saveSettings = () => {
+  const saveSettings = async () => {
     const name1 = editName1.trim() || "Person 1";
     const name2 = editName2.trim() || "Person 2";
-    const updated: MealPlan = {
-      ...plan,
-      person1Name: name1,
-      person2Name: name2,
-    };
-    saveMealPlan(updated);
-    prevPlanRef.current = JSON.stringify(updated);
-    setPlan(updated);
+    setPlan((prev) => ({ ...prev, person1Name: name1, person2Name: name2 }));
     setSettingsOpen(false);
-    toast.success("Names updated!");
+    localWritePendingRef.current = true;
+    try {
+      await actor?.setNames(name1, name2);
+      toast.success("Names updated!");
+    } catch {
+      toast.error("Could not save — please try again");
+    }
   };
 
   // ── Manual refresh ─────────────────────────────────────────────────────────
-  const handleManualRefresh = () => {
-    poll();
-    setLastSynced(new Date());
-    toast.success("Refreshed!");
+  const handleManualRefresh = async () => {
+    if (!actor) return;
+    try {
+      await fetchAllData(actor);
+      setLastSynced(new Date());
+      toast.success("Refreshed!");
+    } catch {
+      toast.error("Could not refresh — please try again");
+    }
   };
 
   const formatTime = (d: Date) =>
     d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  // ── Shopping list actions ──────────────────────────────────────────────────
+  const shoppingActions = {
+    onAdd: async (id: string, text: string) => {
+      localWritePendingRef.current = true;
+      await actor?.addShoppingItem(id, text);
+    },
+    onToggle: async (id: string) => {
+      localWritePendingRef.current = true;
+      await actor?.toggleShoppingItem(id);
+    },
+    onClearAll: async () => {
+      localWritePendingRef.current = true;
+      await actor?.clearShoppingList();
+    },
+    onClearTicked: async () => {
+      localWritePendingRef.current = true;
+      await actor?.clearTickedShoppingItems();
+    },
+    onOptimisticUpdate: (updater: (prev: ShoppingItem[]) => ShoppingItem[]) => {
+      setShoppingItems((prev) => updater(prev));
+    },
+  };
+
+  // ── House list actions ─────────────────────────────────────────────────────
+  const houseActions = {
+    onAdd: async (id: string, text: string) => {
+      localWritePendingRef.current = true;
+      await actor?.addHouseItem(id, text);
+    },
+    onToggle: async (id: string) => {
+      localWritePendingRef.current = true;
+      await actor?.toggleHouseItem(id);
+    },
+    onClearAll: async () => {
+      localWritePendingRef.current = true;
+      await actor?.clearHouseList();
+    },
+    onClearTicked: async () => {
+      localWritePendingRef.current = true;
+      await actor?.clearTickedHouseItems();
+    },
+    onOptimisticUpdate: (updater: (prev: ShoppingItem[]) => ShoppingItem[]) => {
+      setHouseItems((prev) => updater(prev));
+    },
+  };
+
+  // ── Render loading screen ──────────────────────────────────────────────────
+  if (isLoading || !actor) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col page-botanical overflow-x-hidden">
@@ -780,10 +945,11 @@ export default function App() {
             style={{ marginTop: 0, paddingTop: 0 }}
           >
             <ListPanel
-              storageKey={SHOPPING_KEY}
+              items={shoppingItems}
               title="Shopping List"
               ocidPrefix="shopping"
               toastLabel="Shopping list"
+              {...shoppingActions}
             />
           </TabsContent>
 
@@ -794,10 +960,11 @@ export default function App() {
             style={{ marginTop: 0, paddingTop: 0 }}
           >
             <ListPanel
-              storageKey={HOUSE_KEY}
+              items={houseItems}
               title="For the House"
               ocidPrefix="house"
               toastLabel="House list"
+              {...houseActions}
             />
           </TabsContent>
         </Tabs>

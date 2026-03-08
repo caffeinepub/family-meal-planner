@@ -1,2 +1,31 @@
+type ShoppingItem = 
+ record {
+   id: text;
+   purchased: bool;
+   "text": text;
+ };
 service : {
+  addHouseItem: (id: text, "text": text) -> ();
+  addShoppingItem: (id: text, "text": text) -> ();
+  clearHouseList: () -> ();
+  clearMeals: () -> ();
+  clearShoppingList: () -> ();
+  clearTickedHouseItems: () -> ();
+  clearTickedShoppingItems: () -> ();
+  getHouseList: () -> (vec ShoppingItem) query;
+  getLastModified: () -> (int) query;
+  getMealPlan: () ->
+   (record {
+      meals: vec record {
+                   text;
+                   text;
+                 };
+      person1Name: text;
+      person2Name: text;
+    }) query;
+  getShoppingList: () -> (vec ShoppingItem) query;
+  setMeal: (key: text, value: text) -> ();
+  setNames: (name1: text, name2: text) -> ();
+  toggleHouseItem: (id: text) -> ();
+  toggleShoppingItem: (id: text) -> ();
 }
