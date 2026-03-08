@@ -287,7 +287,9 @@ function ShoppingList() {
           onKeyDown={handleKeyDown}
           placeholder="Add an item and press Enter…"
           className="w-full bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground/40 placeholder:italic"
-          style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+          style={{
+            fontFamily: '"GFS Didot", Didot, "Bodoni MT", Georgia, serif',
+          }}
           data-ocid="shopping.input"
           aria-label="Add shopping list item"
         />

@@ -2,14 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Playfair Display — grand display serif (sole font) */
-@font-face {
-  font-family: "Playfair Display";
-  src: url("/assets/fonts/Playfair Display.woff2") format("woff2");
-  font-weight: 400 900;
-  font-style: normal;
-  font-display: swap;
-}
+/* GFS Didot — true Didot editorial serif (sole font, loaded via Google Fonts in index.html) */
 
 @layer base {
   :root {
@@ -84,12 +77,12 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: "GFS Didot", Didot, "Bodoni MT", Georgia, serif;
     font-size: 16px;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: "GFS Didot", Didot, "Bodoni MT", Georgia, serif;
   }
 }
 
@@ -109,7 +102,7 @@
   background: oklch(var(--accent) / 0.7);
 }
 
-/* Full-page botanical background */
+/* Full-page monotone dark brown leopard print background */
 .page-botanical {
   position: relative;
 }
@@ -117,7 +110,7 @@
   content: "";
   position: fixed;
   inset: 0;
-  background-image: url("/assets/generated/botanical-header-pattern.dim_400x400.jpg");
+  background-image: url("/assets/generated/leopard-brown-bg.dim_400x400.jpg");
   background-repeat: repeat;
   background-size: 400px 400px;
   z-index: -2;
@@ -126,15 +119,14 @@
   content: "";
   position: fixed;
   inset: 0;
-  background-color: oklch(0.12 0.09 152 / 0.88);
+  background-color: oklch(0.18 0.04 50 / 0.45);
   z-index: -1;
 }
 
-/* Real leopard print background — uses the generated photo tile */
+/* Solid dark brown header background */
 .leopard-bg {
-  background-image: url("/assets/generated/leopard-print-tile.dim_400x400.jpg");
-  background-size: 180px;
-  background-repeat: repeat;
+  background: oklch(0.22 0.05 45);
+  background-image: none;
 }
 
 /* Meal textarea styling */
@@ -143,7 +135,7 @@
   border: none;
   outline: none;
   width: 100%;
-  font-family: "Playfair Display", Georgia, serif;
+  font-family: "GFS Didot", Didot, "Bodoni MT", Georgia, serif;
   font-size: 0.875rem;
   color: oklch(0.94 0.02 85);
   padding: 0.5rem 0.6rem;
@@ -171,7 +163,7 @@
 
 /* Meal gutter label — small-caps editorial style */
 .meal-label {
-  font-family: "Playfair Display", Georgia, serif;
+  font-family: "GFS Didot", Didot, "Bodoni MT", Georgia, serif;
   font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 0.12em;
