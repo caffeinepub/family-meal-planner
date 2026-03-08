@@ -783,7 +783,7 @@ export default function App() {
             <TabsList className="w-full bg-transparent border-none shadow-none p-0 h-auto gap-0">
               <TabsTrigger
                 value="planner"
-                className="flex-1 min-w-0 bg-transparent text-amber-100/60 data-[state=active]:text-amber-100 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-300/80 border-b-2 border-transparent rounded-none px-1 py-2 text-xs tracking-widest uppercase font-semibold transition-all"
+                className="flex-1 min-w-0 bg-transparent border-none shadow-none rounded-none px-1 py-2 text-xs tracking-widest uppercase font-normal text-amber-100/60 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-none data-[state=active]:text-amber-100 data-[state=active]:font-bold transition-all outline-none focus-visible:outline-none ring-0 focus-visible:ring-0"
                 style={{
                   fontFamily: '"GFS Didot", Didot, "Bodoni MT", Georgia, serif',
                 }}
@@ -793,7 +793,7 @@ export default function App() {
               </TabsTrigger>
               <TabsTrigger
                 value="shopping"
-                className="flex-1 min-w-0 bg-transparent text-amber-100/60 data-[state=active]:text-amber-100 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-300/80 border-b-2 border-transparent rounded-none px-1 py-2 text-xs tracking-widest uppercase font-semibold transition-all"
+                className="flex-1 min-w-0 bg-transparent border-none shadow-none rounded-none px-1 py-2 text-xs tracking-widest uppercase font-normal text-amber-100/60 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-none data-[state=active]:text-amber-100 data-[state=active]:font-bold transition-all outline-none focus-visible:outline-none ring-0 focus-visible:ring-0"
                 style={{
                   fontFamily: '"GFS Didot", Didot, "Bodoni MT", Georgia, serif',
                 }}
@@ -803,7 +803,7 @@ export default function App() {
               </TabsTrigger>
               <TabsTrigger
                 value="house"
-                className="flex-1 min-w-0 bg-transparent text-amber-100/60 data-[state=active]:text-amber-100 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-300/80 border-b-2 border-transparent rounded-none px-1 py-2 text-xs tracking-widest uppercase font-semibold transition-all"
+                className="flex-1 min-w-0 bg-transparent border-none shadow-none rounded-none px-1 py-2 text-xs tracking-widest uppercase font-normal text-amber-100/60 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-none data-[state=active]:text-amber-100 data-[state=active]:font-bold transition-all outline-none focus-visible:outline-none ring-0 focus-visible:ring-0"
                 style={{
                   fontFamily: '"GFS Didot", Didot, "Bodoni MT", Georgia, serif',
                   fontSize: "0.6rem",
@@ -887,7 +887,7 @@ export default function App() {
                     return (
                       <div
                         key={mealType}
-                        className={`flex items-center gap-0 w-full min-w-0 ${!isLast ? "border-b border-border/20" : ""}`}
+                        className={`flex items-stretch gap-0 w-full min-w-0 ${!isLast ? "border-b border-border/20" : ""}`}
                         data-ocid={`meal.${dayIndex}.${mealTypeIndex}.row`}
                       >
                         {/* Meal icon + label gutter — widened so "Breakfast" fits */}
@@ -902,7 +902,7 @@ export default function App() {
                         </div>
 
                         {/* Person 1 textarea */}
-                        <div className="flex-1 min-w-0 border-l border-border/20">
+                        <div className="flex-1 min-w-0 border-l border-border/20 flex items-center">
                           <MealCell
                             dayIndex={dayIndex}
                             mealTypeIndex={mealTypeIndex}
@@ -917,7 +917,7 @@ export default function App() {
                         </div>
 
                         {/* Person 2 textarea */}
-                        <div className="flex-1 min-w-0 border-l border-border/20">
+                        <div className="flex-1 min-w-0 border-l border-border/20 flex items-center">
                           <MealCell
                             dayIndex={dayIndex}
                             mealTypeIndex={mealTypeIndex}
