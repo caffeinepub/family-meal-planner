@@ -1,0 +1,229 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Playfair Display — grand display serif (sole font) */
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/assets/fonts/Playfair Display.woff2") format("woff2");
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+
+    /* Dark forest green dominant palette */
+    --background: 0.14 0.08 152;
+    --foreground: 0.94 0.02 85;
+
+    /* Card: slightly lighter dark green */
+    --card: 0.18 0.09 152;
+    --card-foreground: 0.94 0.02 85;
+
+    /* Popover */
+    --popover: 0.18 0.09 152;
+    --popover-foreground: 0.94 0.02 85;
+
+    /* Primary: dark forest green */
+    --primary: 0.22 0.11 152;
+    --primary-foreground: 0.96 0.02 85;
+
+    /* Secondary: slightly lighter dark green */
+    --secondary: 0.28 0.10 152;
+    --secondary-foreground: 0.94 0.02 85;
+
+    /* Muted: dark green */
+    --muted: 0.20 0.07 152;
+    --muted-foreground: 0.70 0.03 85;
+
+    /* Accent: rich gold/amber */
+    --accent: 0.72 0.12 80;
+    --accent-foreground: 0.15 0.06 50;
+
+    /* Destructive: rich crimson */
+    --destructive: 0.5 0.2 20;
+    --destructive-foreground: 0.97 0.01 85;
+
+    /* Border/input: subtle dark-green */
+    --border: 0.25 0.08 152;
+    --input: 0.25 0.08 152;
+    --ring: 0.72 0.12 80;
+
+    /* Charts */
+    --chart-1: 0.22 0.11 152;
+    --chart-2: 0.72 0.12 80;
+    --chart-3: 0.28 0.10 152;
+    --chart-4: 0.5 0.2 20;
+    --chart-5: 0.6 0.09 60;
+
+    /* Sidebar */
+    --sidebar: 0.18 0.09 152;
+    --sidebar-foreground: 0.94 0.02 85;
+    --sidebar-primary: 0.22 0.11 152;
+    --sidebar-primary-foreground: 0.96 0.02 85;
+    --sidebar-accent: 0.72 0.12 80;
+    --sidebar-accent-foreground: 0.15 0.06 50;
+    --sidebar-border: 0.25 0.08 152;
+    --sidebar-ring: 0.72 0.12 80;
+
+    /* Custom meal planner tokens */
+    --day-header-bg: 0.22 0.11 152;
+    --day-header-fg: 0.96 0.02 85;
+    --meal-row-alt: 0.18 0.09 152;
+    --person-header-bg: 0.72 0.12 80;
+    --person-header-fg: 0.15 0.06 50;
+    --table-border: 0.25 0.08 152;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 16px;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Playfair Display", Georgia, serif;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: oklch(var(--muted));
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(var(--accent) / 0.4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(var(--accent) / 0.7);
+}
+
+/* Full-page botanical background */
+.page-botanical {
+  position: relative;
+}
+.page-botanical::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("/assets/generated/botanical-header-pattern.dim_400x400.jpg");
+  background-repeat: repeat;
+  background-size: 400px 400px;
+  z-index: -2;
+}
+.page-botanical::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-color: oklch(0.12 0.09 152 / 0.88);
+  z-index: -1;
+}
+
+/* Real leopard print background — uses the generated photo tile */
+.leopard-bg {
+  background-image: url("/assets/generated/leopard-print-tile.dim_400x400.jpg");
+  background-size: 180px;
+  background-repeat: repeat;
+}
+
+/* Meal textarea styling */
+.meal-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 0.875rem;
+  color: oklch(0.94 0.02 85);
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.375rem;
+  transition: background 0.15s ease;
+  min-height: 72px;
+  resize: none;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+.meal-input:hover {
+  background: oklch(0.94 0.02 85 / 0.06);
+}
+
+.meal-input:focus {
+  background: oklch(0.94 0.02 85 / 0.09);
+  box-shadow: 0 0 0 2px oklch(0.72 0.12 80 / 0.4);
+}
+
+.meal-input::placeholder {
+  color: oklch(0.94 0.02 85 / 0.35);
+  font-style: italic;
+}
+
+/* Meal gutter label — small-caps editorial style */
+.meal-label {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: oklch(0.70 0.03 85);
+  line-height: 1;
+}
+
+/* Shopping list item styles */
+.shopping-item-purchased .shopping-item-text {
+  text-decoration: line-through;
+  opacity: 0.45;
+  color: oklch(var(--muted-foreground));
+}
+
+.shopping-item-text {
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+/* Shopping list checkbox — styled like iOS Notes */
+.shopping-checkbox {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid oklch(0.94 0.02 85 / 0.4);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  position: relative;
+}
+
+.shopping-checkbox:checked {
+  background: oklch(0.72 0.12 80);
+  border-color: oklch(0.72 0.12 80);
+}
+
+.shopping-checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 6px;
+  height: 11px;
+  border: 2px solid oklch(0.15 0.06 50);
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+.shopping-checkbox:hover:not(:checked) {
+  border-color: oklch(0.94 0.02 85 / 0.7);
+  background: oklch(0.94 0.02 85 / 0.08);
+}
