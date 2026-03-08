@@ -21,8 +21,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Heart,
+  Home,
   RefreshCw,
   Settings2,
   ShoppingCart,
@@ -50,7 +52,9 @@ interface ShoppingItem {
 
 const STORAGE_KEY = "mealPlan";
 const SHOPPING_KEY = "shoppingList";
+const HOUSE_KEY = "houseList";
 const POLL_INTERVAL = 5000;
+const NOTIFY_DEBOUNCE_MS = 3000;
 
 const DAYS = [
   "Monday",
@@ -94,9 +98,9 @@ function saveMealPlan(plan: MealPlan): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(plan));
 }
 
-function loadShoppingList(): ShoppingItem[] {
+function loadList(key: string): ShoppingItem[] {
   try {
-    const raw = localStorage.getItem(SHOPPING_KEY);
+    const raw = localStorage.getItem(key);
     if (raw) {
       return JSON.parse(raw) as ShoppingItem[];
     }
@@ -106,8 +110,8 @@ function loadShoppingList(): ShoppingItem[] {
   return [];
 }
 
-function saveShoppingList(items: ShoppingItem[]): void {
-  localStorage.setItem(SHOPPING_KEY, JSON.stringify(items));
+function saveList(key: string, items: ShoppingItem[]): void {
+  localStorage.setItem(key, JSON.stringify(items));
 }
 
 // ─── Meal key helper ──────────────────────────────────────────────────────────
@@ -118,6 +122,39 @@ function mealKey(
   personIndex: number,
 ): string {
   return `${dayIndex}-${mealTypeIndex}-${personIndex}`;
+}
+
+// ─── useChangeNotify hook — debounced partner notification ────────────────────
+
+function useChangeNotify(serialised: string, label: string) {
+  // Track first render without adding refs to dependency array
+  const stateRef = useRef({
+    mounted: false,
+    timer: null as ReturnType<typeof setTimeout> | null,
+  });
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: stateRef is a stable ref, serialised/label are the intentional deps
+  useEffect(() => {
+    const state = stateRef.current;
+
+    // Skip the very first mount
+    if (!state.mounted) {
+      state.mounted = true;
+      return;
+    }
+
+    // Clear any pending timer and start a new debounce
+    if (state.timer) clearTimeout(state.timer);
+    state.timer = setTimeout(() => {
+      toast.info(`${label} updated — your partner will be notified`, {
+        duration: 4000,
+      });
+    }, NOTIFY_DEBOUNCE_MS);
+
+    return () => {
+      if (state.timer) clearTimeout(state.timer);
+    };
+  }, [serialised, label]);
 }
 
 // ─── MealCell component (textarea, 3 rows) ────────────────────────────────────
@@ -166,12 +203,36 @@ function MealCell({
   );
 }
 
-// ─── ShoppingList component ───────────────────────────────────────────────────
+// ─── Generic list component (used for Shopping List & For the House) ──────────
 
-function ShoppingList() {
-  const [items, setItems] = useState<ShoppingItem[]>(loadShoppingList);
+interface ListPanelProps {
+  storageKey: string;
+  title: string;
+  icon: React.ReactNode;
+  ocidPrefix: string;
+  toastLabel: string;
+}
+
+function ListPanel({
+  storageKey,
+  title,
+  icon,
+  ocidPrefix,
+  toastLabel,
+}: ListPanelProps) {
+  const [items, setItems] = useState<ShoppingItem[]>(() =>
+    loadList(storageKey),
+  );
   const [inputValue, setInputValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Debounced partner notification
+  useChangeNotify(JSON.stringify(items), toastLabel);
+
+  const persist = (updated: ShoppingItem[]) => {
+    saveList(storageKey, updated);
+    return updated;
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -183,29 +244,33 @@ function ShoppingList() {
         text: trimmed,
         purchased: false,
       };
-      setItems((prev) => {
-        const updated = [...prev, newItem];
-        saveShoppingList(updated);
-        return updated;
-      });
+      setItems((prev) => persist([...prev, newItem]));
       setInputValue("");
     }
   };
 
   const togglePurchased = (id: string) => {
-    setItems((prev) => {
-      const updated = prev.map((item) =>
-        item.id === id ? { ...item, purchased: !item.purchased } : item,
-      );
-      saveShoppingList(updated);
-      return updated;
-    });
+    setItems((prev) =>
+      persist(
+        prev.map((item) =>
+          item.id === id ? { ...item, purchased: !item.purchased } : item,
+        ),
+      ),
+    );
   };
 
   const handleClearAll = () => {
-    setItems([]);
-    saveShoppingList([]);
-    toast.success("Shopping list cleared!");
+    setItems(persist([]));
+    toast.success(`${toastLabel} cleared!`);
+  };
+
+  const handleClearNotSelected = () => {
+    setItems((prev) => {
+      const updated = prev.filter((item) => item.purchased);
+      persist(updated);
+      return updated;
+    });
+    toast.success(`Unticked items removed from ${toastLabel.toLowerCase()}!`);
   };
 
   return (
@@ -214,67 +279,119 @@ function ShoppingList() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, delay: 0.18 }}
       className="rounded-sm overflow-hidden"
-      data-ocid="shopping.panel"
+      data-ocid={`${ocidPrefix}.panel`}
     >
-      {/* Section Header — leopard print */}
-      <div className="leopard-bg px-5 py-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <ShoppingCart className="w-5 h-5 text-amber-100" />
+      {/* Section Header */}
+      <div className="leopard-bg px-4 py-3 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5">
+          <span className="text-amber-100 w-5 h-5 flex items-center">
+            {icon}
+          </span>
           <h2
             className="font-bold text-amber-100 leading-none tracking-tight"
-            style={{ fontSize: "clamp(1.1rem, 3vw, 1.5rem)" }}
+            style={{ fontSize: "clamp(1rem, 3vw, 1.4rem)" }}
           >
-            Shopping List
+            {title}
           </h2>
         </div>
 
         {/* Ornamental motif */}
-        <span className="text-amber-200/60 text-lg select-none">❧</span>
+        <span className="text-amber-200/60 text-lg select-none hidden sm:inline">
+          ❧
+        </span>
 
-        {/* Clear All */}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-3 rounded-sm text-xs text-amber-100/70 hover:bg-black/20 hover:text-amber-100 gap-1.5 transition-colors"
-              data-ocid="shopping.clear_button"
-              aria-label="Clear shopping list"
+        {/* Action buttons */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Clear All Not Selected */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2.5 rounded-sm text-xs text-amber-100/70 hover:bg-black/20 hover:text-amber-100 gap-1 transition-colors"
+                data-ocid={`${ocidPrefix}.clear_not_selected_button`}
+                aria-label={`Clear unticked items from ${title}`}
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Clear Unticked</span>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent
+              className="sm:max-w-md rounded-xl border-border"
+              data-ocid={`${ocidPrefix}.clear_not_selected.dialog`}
             >
-              <Trash2 className="w-3 h-3" />
-              <span>Clear All</span>
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent
-            className="sm:max-w-md rounded-xl border-border"
-            data-ocid="shopping.clear.dialog"
-          >
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-xl text-foreground">
-                Clear the shopping list?
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-muted-foreground">
-                This will remove all items from your shopping list. This cannot
-                be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="gap-2">
-              <AlertDialogCancel
-                className="rounded-lg"
-                data-ocid="shopping.clear.cancel_button"
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-xl text-foreground">
+                  Remove all unticked items?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-muted-foreground">
+                  This will remove all items that have not been ticked. Ticked
+                  items will be kept.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="gap-2">
+                <AlertDialogCancel
+                  className="rounded-lg"
+                  data-ocid={`${ocidPrefix}.clear_not_selected.cancel_button`}
+                >
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleClearNotSelected}
+                  className="rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  data-ocid={`${ocidPrefix}.clear_not_selected.confirm_button`}
+                >
+                  Remove Unticked
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Clear All */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2.5 rounded-sm text-xs text-amber-100/70 hover:bg-black/20 hover:text-amber-100 gap-1 transition-colors"
+                data-ocid={`${ocidPrefix}.clear_button`}
+                aria-label={`Clear all items from ${title}`}
               >
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleClearAll}
-                className="rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                data-ocid="shopping.clear.confirm_button"
-              >
-                Clear All
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                <Trash2 className="w-3 h-3" />
+                <span>Clear All</span>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent
+              className="sm:max-w-md rounded-xl border-border"
+              data-ocid={`${ocidPrefix}.clear.dialog`}
+            >
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-xl text-foreground">
+                  Clear {title.toLowerCase()}?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-muted-foreground">
+                  This will remove every item from {title.toLowerCase()}. This
+                  cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="gap-2">
+                <AlertDialogCancel
+                  className="rounded-lg"
+                  data-ocid={`${ocidPrefix}.clear.cancel_button`}
+                >
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleClearAll}
+                  className="rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  data-ocid={`${ocidPrefix}.clear.confirm_button`}
+                >
+                  Clear All
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       {/* Add item input */}
@@ -290,8 +407,8 @@ function ShoppingList() {
           style={{
             fontFamily: '"GFS Didot", Didot, "Bodoni MT", Georgia, serif',
           }}
-          data-ocid="shopping.input"
-          aria-label="Add shopping list item"
+          data-ocid={`${ocidPrefix}.input`}
+          aria-label={`Add item to ${title}`}
         />
       </div>
 
@@ -300,7 +417,7 @@ function ShoppingList() {
         {items.length === 0 ? (
           <div
             className="flex items-center justify-center py-10 px-4"
-            data-ocid="shopping.empty_state"
+            data-ocid={`${ocidPrefix}.empty_state`}
           >
             <p className="text-sm text-foreground/40 italic">
               Your list is empty
@@ -317,15 +434,15 @@ function ShoppingList() {
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.2 }}
                   className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-foreground/5 ${item.purchased ? "shopping-item-purchased" : ""}`}
-                  data-ocid={`shopping.item.${index + 1}`}
+                  data-ocid={`${ocidPrefix}.item.${index + 1}`}
                 >
                   <input
                     type="checkbox"
                     checked={item.purchased}
                     onChange={() => togglePurchased(item.id)}
                     className="shopping-checkbox"
-                    aria-label={`Mark "${item.text}" as purchased`}
-                    data-ocid={`shopping.checkbox.${index + 1}`}
+                    aria-label={`Mark "${item.text}" as done`}
+                    data-ocid={`${ocidPrefix}.checkbox.${index + 1}`}
                   />
                   <span
                     className="shopping-item-text text-sm flex-1 select-text cursor-default"
@@ -359,6 +476,9 @@ export default function App() {
   const [editName2, setEditName2] = useState(plan.person2Name);
   const [lastSynced, setLastSynced] = useState<Date>(new Date());
   const prevPlanRef = useRef<string>(JSON.stringify(plan));
+
+  // Debounced partner notification for the meal plan
+  useChangeNotify(JSON.stringify(plan.meals), "Meal plan");
 
   // ── Polling ──────────────────────────────────────────────────────────────
   const poll = useCallback(() => {
@@ -519,121 +639,175 @@ export default function App() {
       </div>
 
       {/* ── Main Content ───────────────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-xl mx-auto px-3 py-5 pb-10 flex flex-col gap-4">
-        {/* ── Names header row — leopard print ── */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.05 }}
-          className="leopard-bg rounded-sm overflow-hidden"
-          data-ocid="meal.table"
-        >
-          <div className="flex items-stretch">
-            {/* Person 1 name */}
-            <div className="flex-1 flex items-center justify-center px-3 py-4 border-r border-black/20">
-              <span
-                className="font-bold tracking-tight text-amber-100 text-center leading-tight"
-                style={{ fontSize: "clamp(1.1rem, 4vw, 1.6rem)" }}
+      <main className="flex-1 w-full max-w-xl mx-auto px-3 pb-10 flex flex-col">
+        {/* ── Tab System ─────────────────────────────────────────────────── */}
+        <Tabs defaultValue="planner" className="flex flex-col flex-1 gap-0">
+          {/* Sticky tab bar */}
+          <div className="sticky top-0 z-20 bg-primary/60 backdrop-blur-sm border-b border-amber-200/10 py-2 px-1">
+            <TabsList className="w-full bg-transparent border-none p-0 h-auto gap-1">
+              <TabsTrigger
+                value="planner"
+                className="flex-1 text-amber-100/70 data-[state=active]:text-amber-100 data-[state=active]:bg-amber-200/15 data-[state=active]:border-b-2 data-[state=active]:border-amber-300/60 rounded-sm px-3 py-2 text-sm tracking-wide uppercase font-semibold transition-all"
+                data-ocid="tabs.planner.tab"
               >
-                {plan.person1Name}
-              </span>
-            </div>
-            {/* Ornamental centre divider */}
-            <div className="flex items-center px-2 text-amber-200/70 select-none text-xl">
-              ✦
-            </div>
-            {/* Person 2 name */}
-            <div className="flex-1 flex items-center justify-center px-3 py-4 border-l border-black/20">
-              <span
-                className="font-bold tracking-tight text-amber-100 text-center leading-tight"
-                style={{ fontSize: "clamp(1.1rem, 4vw, 1.6rem)" }}
+                Planner
+              </TabsTrigger>
+              <TabsTrigger
+                value="shopping"
+                className="flex-1 text-amber-100/70 data-[state=active]:text-amber-100 data-[state=active]:bg-amber-200/15 data-[state=active]:border-b-2 data-[state=active]:border-amber-300/60 rounded-sm px-3 py-2 text-sm tracking-wide uppercase font-semibold transition-all"
+                data-ocid="tabs.shopping.tab"
               >
-                {plan.person2Name}
-              </span>
-            </div>
+                Shopping List
+              </TabsTrigger>
+              <TabsTrigger
+                value="house"
+                className="flex-1 text-amber-100/70 data-[state=active]:text-amber-100 data-[state=active]:bg-amber-200/15 data-[state=active]:border-b-2 data-[state=active]:border-amber-300/60 rounded-sm px-3 py-2 text-sm tracking-wide uppercase font-semibold transition-all"
+                data-ocid="tabs.house.tab"
+              >
+                For the House
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </motion.div>
 
-        {/* ── Day cards — one per day ── */}
-        {DAYS.map((day, dayIndex) => (
-          <motion.div
-            key={day}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.08 + dayIndex * 0.04 }}
-            className="rounded-sm overflow-hidden"
-            data-ocid={`meal.${dayIndex}.card`}
-          >
-            {/* Day header — leopard print, horizontal text */}
-            <div className="leopard-bg px-4 py-2.5 flex items-center justify-center">
-              <h3
-                className="font-bold tracking-widest text-amber-100 uppercase text-center select-none"
-                style={{
-                  fontSize: "clamp(0.85rem, 2.5vw, 1.05rem)",
-                  letterSpacing: "0.18em",
-                }}
-              >
-                {day}
-              </h3>
-            </div>
-
-            {/* Meal rows */}
-            <div className="flex flex-col">
-              {MEAL_TYPES.map((mealType, mealTypeIndex) => {
-                const isLast = mealTypeIndex === MEAL_TYPES.length - 1;
-                return (
-                  <div
-                    key={mealType}
-                    className={`flex items-start gap-0 ${!isLast ? "border-b border-border/20" : ""}`}
-                    data-ocid={`meal.${dayIndex}.${mealTypeIndex}.row`}
+          {/* ── Planner Tab ── */}
+          <TabsContent value="planner" className="flex flex-col gap-4 pt-4">
+            {/* Names header row */}
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.05 }}
+              className="leopard-bg rounded-sm overflow-hidden"
+              data-ocid="meal.table"
+            >
+              <div className="flex items-stretch">
+                {/* Person 1 name */}
+                <div className="flex-1 flex items-center justify-center px-3 py-4 border-r border-black/20">
+                  <span
+                    className="font-bold tracking-tight text-amber-100 text-center leading-tight"
+                    style={{ fontSize: "clamp(1.1rem, 4vw, 1.6rem)" }}
                   >
-                    {/* Meal icon + label gutter */}
-                    <div
-                      className="flex flex-col items-center justify-start gap-0.5 pt-2.5 pb-2 shrink-0"
-                      style={{ width: "52px" }}
-                    >
-                      <span className="text-base leading-none select-none">
-                        {MEAL_ICONS[mealType]}
-                      </span>
-                      <span className="meal-label">{mealType}</span>
-                    </div>
+                    {plan.person1Name}
+                  </span>
+                </div>
+                {/* Ornamental centre divider */}
+                <div className="flex items-center px-2 text-amber-200/70 select-none text-xl">
+                  ✦
+                </div>
+                {/* Person 2 name */}
+                <div className="flex-1 flex items-center justify-center px-3 py-4 border-l border-black/20">
+                  <span
+                    className="font-bold tracking-tight text-amber-100 text-center leading-tight"
+                    style={{ fontSize: "clamp(1.1rem, 4vw, 1.6rem)" }}
+                  >
+                    {plan.person2Name}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
 
-                    {/* Person 1 textarea */}
-                    <div className="flex-1 border-l border-border/20">
-                      <MealCell
-                        dayIndex={dayIndex}
-                        mealTypeIndex={mealTypeIndex}
-                        personIndex={0}
-                        value={
-                          plan.meals[mealKey(dayIndex, mealTypeIndex, 0)] ?? ""
-                        }
-                        placeholder={`${mealType}…`}
-                        onSave={handleSaveMeal}
-                      />
-                    </div>
+            {/* Day cards — one per day */}
+            {DAYS.map((day, dayIndex) => (
+              <motion.div
+                key={day}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.08 + dayIndex * 0.04 }}
+                className="rounded-sm overflow-hidden"
+                data-ocid={`meal.${dayIndex}.card`}
+              >
+                {/* Day header — transparent, shows leopard background */}
+                <div className="leopard-bg px-4 py-2.5 flex items-center justify-center">
+                  <h3
+                    className="font-bold tracking-widest text-amber-100 uppercase text-center select-none"
+                    style={{
+                      fontSize: "clamp(0.85rem, 2.5vw, 1.05rem)",
+                      letterSpacing: "0.18em",
+                    }}
+                  >
+                    {day}
+                  </h3>
+                </div>
 
-                    {/* Person 2 textarea */}
-                    <div className="flex-1 border-l border-border/20">
-                      <MealCell
-                        dayIndex={dayIndex}
-                        mealTypeIndex={mealTypeIndex}
-                        personIndex={1}
-                        value={
-                          plan.meals[mealKey(dayIndex, mealTypeIndex, 1)] ?? ""
-                        }
-                        placeholder={`${mealType}…`}
-                        onSave={handleSaveMeal}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        ))}
+                {/* Meal rows */}
+                <div className="flex flex-col">
+                  {MEAL_TYPES.map((mealType, mealTypeIndex) => {
+                    const isLast = mealTypeIndex === MEAL_TYPES.length - 1;
+                    return (
+                      <div
+                        key={mealType}
+                        className={`flex items-start gap-0 ${!isLast ? "border-b border-border/20" : ""}`}
+                        data-ocid={`meal.${dayIndex}.${mealTypeIndex}.row`}
+                      >
+                        {/* Meal icon + label gutter — widened so "Breakfast" fits */}
+                        <div
+                          className="flex flex-col items-center justify-start gap-0.5 pt-2.5 pb-2 shrink-0"
+                          style={{ width: "72px" }}
+                        >
+                          <span className="text-base leading-none select-none">
+                            {MEAL_ICONS[mealType]}
+                          </span>
+                          <span className="meal-label">{mealType}</span>
+                        </div>
 
-        {/* ── Shopping List ── */}
-        <ShoppingList />
+                        {/* Person 1 textarea */}
+                        <div className="flex-1 border-l border-border/20">
+                          <MealCell
+                            dayIndex={dayIndex}
+                            mealTypeIndex={mealTypeIndex}
+                            personIndex={0}
+                            value={
+                              plan.meals[mealKey(dayIndex, mealTypeIndex, 0)] ??
+                              ""
+                            }
+                            placeholder={`${mealType}…`}
+                            onSave={handleSaveMeal}
+                          />
+                        </div>
+
+                        {/* Person 2 textarea */}
+                        <div className="flex-1 border-l border-border/20">
+                          <MealCell
+                            dayIndex={dayIndex}
+                            mealTypeIndex={mealTypeIndex}
+                            personIndex={1}
+                            value={
+                              plan.meals[mealKey(dayIndex, mealTypeIndex, 1)] ??
+                              ""
+                            }
+                            placeholder={`${mealType}…`}
+                            onSave={handleSaveMeal}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            ))}
+          </TabsContent>
+
+          {/* ── Shopping List Tab ── */}
+          <TabsContent value="shopping" className="flex flex-col pt-4">
+            <ListPanel
+              storageKey={SHOPPING_KEY}
+              title="Shopping List"
+              icon={<ShoppingCart className="w-5 h-5" />}
+              ocidPrefix="shopping"
+              toastLabel="Shopping list"
+            />
+          </TabsContent>
+
+          {/* ── For the House Tab ── */}
+          <TabsContent value="house" className="flex flex-col pt-4">
+            <ListPanel
+              storageKey={HOUSE_KEY}
+              title="For the House"
+              icon={<Home className="w-5 h-5" />}
+              ocidPrefix="house"
+              toastLabel="House list"
+            />
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* ── Footer ─────────────────────────────────────────────────────── */}

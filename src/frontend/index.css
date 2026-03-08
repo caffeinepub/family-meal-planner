@@ -8,67 +8,67 @@
   :root {
     --radius: 0.5rem;
 
-    /* Dark forest green dominant palette */
-    --background: 0.14 0.08 152;
+    /* Dark brown dominant palette */
+    --background: 0.14 0.05 45;
     --foreground: 0.94 0.02 85;
 
-    /* Card: slightly lighter dark green */
-    --card: 0.18 0.09 152;
+    /* Card: slightly lighter dark brown */
+    --card: 0.18 0.06 45;
     --card-foreground: 0.94 0.02 85;
 
     /* Popover */
-    --popover: 0.18 0.09 152;
+    --popover: 0.18 0.06 45;
     --popover-foreground: 0.94 0.02 85;
 
-    /* Primary: dark forest green */
-    --primary: 0.22 0.11 152;
+    /* Primary: dark brown */
+    --primary: 0.22 0.07 45;
     --primary-foreground: 0.96 0.02 85;
 
-    /* Secondary: slightly lighter dark green */
-    --secondary: 0.28 0.10 152;
+    /* Secondary: slightly lighter dark brown */
+    --secondary: 0.28 0.06 45;
     --secondary-foreground: 0.94 0.02 85;
 
-    /* Muted: dark green */
-    --muted: 0.20 0.07 152;
-    --muted-foreground: 0.70 0.03 85;
+    /* Muted: dark brown */
+    --muted: 0.20 0.05 45;
+    --muted-foreground: 0.70 0.06 75;
 
-    /* Accent: rich gold/amber */
-    --accent: 0.72 0.12 80;
+    /* Accent: rich gold */
+    --accent: 0.72 0.14 80;
     --accent-foreground: 0.15 0.06 50;
 
     /* Destructive: rich crimson */
     --destructive: 0.5 0.2 20;
     --destructive-foreground: 0.97 0.01 85;
 
-    /* Border/input: subtle dark-green */
-    --border: 0.25 0.08 152;
-    --input: 0.25 0.08 152;
-    --ring: 0.72 0.12 80;
+    /* Border/input: gold-tinted brown */
+    --border: 0.60 0.10 78;
+    --input: 0.25 0.06 45;
+    --ring: 0.72 0.14 80;
 
     /* Charts */
-    --chart-1: 0.22 0.11 152;
-    --chart-2: 0.72 0.12 80;
-    --chart-3: 0.28 0.10 152;
+    --chart-1: 0.22 0.07 45;
+    --chart-2: 0.72 0.14 80;
+    --chart-3: 0.28 0.06 45;
     --chart-4: 0.5 0.2 20;
     --chart-5: 0.6 0.09 60;
 
     /* Sidebar */
-    --sidebar: 0.18 0.09 152;
+    --sidebar: 0.18 0.06 45;
     --sidebar-foreground: 0.94 0.02 85;
-    --sidebar-primary: 0.22 0.11 152;
+    --sidebar-primary: 0.22 0.07 45;
     --sidebar-primary-foreground: 0.96 0.02 85;
-    --sidebar-accent: 0.72 0.12 80;
+    --sidebar-accent: 0.72 0.14 80;
     --sidebar-accent-foreground: 0.15 0.06 50;
-    --sidebar-border: 0.25 0.08 152;
-    --sidebar-ring: 0.72 0.12 80;
+    --sidebar-border: 0.60 0.10 78;
+    --sidebar-ring: 0.72 0.14 80;
 
     /* Custom meal planner tokens */
-    --day-header-bg: 0.22 0.11 152;
+    --day-header-bg: 0.22 0.07 45;
     --day-header-fg: 0.96 0.02 85;
-    --meal-row-alt: 0.18 0.09 152;
-    --person-header-bg: 0.72 0.12 80;
+    --meal-row-alt: 0.18 0.06 45;
+    --person-header-bg: 0.72 0.14 80;
     --person-header-fg: 0.15 0.06 50;
-    --table-border: 0.25 0.08 152;
+    --table-border: 0.60 0.10 78;
   }
 
   * {
@@ -119,14 +119,13 @@
   content: "";
   position: fixed;
   inset: 0;
-  background-color: oklch(0.18 0.04 50 / 0.45);
+  background-color: oklch(0.14 0.05 45 / 0.50);
   z-index: -1;
 }
 
-/* Solid dark brown header background */
+/* Transparent — shows the page-level leopard print background through */
 .leopard-bg {
-  background: oklch(0.22 0.05 45);
-  background-image: none;
+  background: transparent;
 }
 
 /* Meal textarea styling */
@@ -164,12 +163,13 @@
 /* Meal gutter label — small-caps editorial style */
 .meal-label {
   font-family: "GFS Didot", Didot, "Bodoni MT", Georgia, serif;
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: oklch(0.70 0.03 85);
+  color: oklch(0.72 0.14 80);
   line-height: 1;
+  white-space: nowrap;
 }
 
 /* Shopping list item styles */
