@@ -89,10 +89,412 @@ export class ExternalBlob {
         return this;
     }
 }
+export interface DinnerIdea {
+    id: string;
+    placeSeen: string;
+    thisWeek: boolean;
+    link: string;
+    name: string;
+}
+export interface ShoppingItem {
+    id: string;
+    text: string;
+    purchased: boolean;
+}
+export interface LunchIdea {
+    id: string;
+    placeSeen: string;
+    thisWeek: boolean;
+    link: string;
+    name: string;
+}
 export interface backendInterface {
+    addDinnerIdea(id: string, name: string, placeSeen: string, link: string): Promise<void>;
+    addHouseItem(id: string, text: string): Promise<void>;
+    addLunchIdea(id: string, name: string, placeSeen: string, link: string): Promise<void>;
+    addShoppingItem(id: string, text: string): Promise<void>;
+    clearDinnerIdeas(): Promise<void>;
+    clearHouseList(): Promise<void>;
+    clearLunchIdeas(): Promise<void>;
+    clearMeals(): Promise<void>;
+    clearShoppingList(): Promise<void>;
+    clearTickedHouseItems(): Promise<void>;
+    clearTickedShoppingItems(): Promise<void>;
+    getDinnerIdeas(): Promise<Array<DinnerIdea>>;
+    getHouseList(): Promise<Array<ShoppingItem>>;
+    getLastModified(): Promise<bigint>;
+    getLunchIdeas(): Promise<Array<LunchIdea>>;
+    getMealPlan(): Promise<{
+        meals: Array<[string, string]>;
+        person1Name: string;
+        person2Name: string;
+    }>;
+    getShoppingList(): Promise<Array<ShoppingItem>>;
+    removeDinnerIdea(id: string): Promise<void>;
+    removeLunchIdea(id: string): Promise<void>;
+    setMeal(key: string, value: string): Promise<void>;
+    setNames(name1: string, name2: string): Promise<void>;
+    toggleDinnerIdeaThisWeek(id: string): Promise<void>;
+    toggleHouseItem(id: string): Promise<void>;
+    toggleLunchIdeaThisWeek(id: string): Promise<void>;
+    toggleShoppingItem(id: string): Promise<void>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
+    async addDinnerIdea(arg0: string, arg1: string, arg2: string, arg3: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addDinnerIdea(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addDinnerIdea(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
+    async addHouseItem(arg0: string, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addHouseItem(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addHouseItem(arg0, arg1);
+            return result;
+        }
+    }
+    async addLunchIdea(arg0: string, arg1: string, arg2: string, arg3: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addLunchIdea(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addLunchIdea(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
+    async addShoppingItem(arg0: string, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addShoppingItem(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addShoppingItem(arg0, arg1);
+            return result;
+        }
+    }
+    async clearDinnerIdeas(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.clearDinnerIdeas();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.clearDinnerIdeas();
+            return result;
+        }
+    }
+    async clearHouseList(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.clearHouseList();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.clearHouseList();
+            return result;
+        }
+    }
+    async clearLunchIdeas(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.clearLunchIdeas();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.clearLunchIdeas();
+            return result;
+        }
+    }
+    async clearMeals(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.clearMeals();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.clearMeals();
+            return result;
+        }
+    }
+    async clearShoppingList(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.clearShoppingList();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.clearShoppingList();
+            return result;
+        }
+    }
+    async clearTickedHouseItems(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.clearTickedHouseItems();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.clearTickedHouseItems();
+            return result;
+        }
+    }
+    async clearTickedShoppingItems(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.clearTickedShoppingItems();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.clearTickedShoppingItems();
+            return result;
+        }
+    }
+    async getDinnerIdeas(): Promise<Array<DinnerIdea>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getDinnerIdeas();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getDinnerIdeas();
+            return result;
+        }
+    }
+    async getHouseList(): Promise<Array<ShoppingItem>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getHouseList();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getHouseList();
+            return result;
+        }
+    }
+    async getLastModified(): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getLastModified();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getLastModified();
+            return result;
+        }
+    }
+    async getLunchIdeas(): Promise<Array<LunchIdea>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getLunchIdeas();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getLunchIdeas();
+            return result;
+        }
+    }
+    async getMealPlan(): Promise<{
+        meals: Array<[string, string]>;
+        person1Name: string;
+        person2Name: string;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getMealPlan();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getMealPlan();
+            return result;
+        }
+    }
+    async getShoppingList(): Promise<Array<ShoppingItem>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getShoppingList();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getShoppingList();
+            return result;
+        }
+    }
+    async removeDinnerIdea(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.removeDinnerIdea(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.removeDinnerIdea(arg0);
+            return result;
+        }
+    }
+    async removeLunchIdea(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.removeLunchIdea(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.removeLunchIdea(arg0);
+            return result;
+        }
+    }
+    async setMeal(arg0: string, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setMeal(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setMeal(arg0, arg1);
+            return result;
+        }
+    }
+    async setNames(arg0: string, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setNames(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setNames(arg0, arg1);
+            return result;
+        }
+    }
+    async toggleDinnerIdeaThisWeek(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.toggleDinnerIdeaThisWeek(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.toggleDinnerIdeaThisWeek(arg0);
+            return result;
+        }
+    }
+    async toggleHouseItem(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.toggleHouseItem(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.toggleHouseItem(arg0);
+            return result;
+        }
+    }
+    async toggleLunchIdeaThisWeek(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.toggleLunchIdeaThisWeek(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.toggleLunchIdeaThisWeek(arg0);
+            return result;
+        }
+    }
+    async toggleShoppingItem(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.toggleShoppingItem(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.toggleShoppingItem(arg0);
+            return result;
+        }
+    }
 }
 export interface CreateActorOptions {
     agent?: Agent;

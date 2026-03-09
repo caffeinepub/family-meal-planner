@@ -1,8 +1,10 @@
 import Time "mo:core/Time";
 import Array "mo:core/Array";
+import Text "mo:core/Text";
+
+
 
 actor {
-
   type ShoppingItem = {
     id : Text;
     text : Text;
@@ -14,11 +16,29 @@ actor {
     value : Text;
   };
 
+  type DinnerIdea = {
+    id : Text;
+    name : Text;
+    placeSeen : Text;
+    link : Text;
+    thisWeek : Bool;
+  };
+
+  type LunchIdea = {
+    id : Text;
+    name : Text;
+    placeSeen : Text;
+    link : Text;
+    thisWeek : Bool;
+  };
+
   var person1Name : Text = "Husband";
   var person2Name : Text = "Wife";
   var mealEntries : [MealEntry] = [];
   var shoppingItems : [ShoppingItem] = [];
   var houseItems : [ShoppingItem] = [];
+  var dinnerIdeas : [DinnerIdea] = [];
+  var lunchIdeas : [LunchIdea] = [];
   var lastModified : Int = 0;
 
   func touch() {
@@ -26,7 +46,7 @@ actor {
   };
 
   public query func getLastModified() : async Int {
-    lastModified
+    lastModified;
   };
 
   public query func getMealPlan() : async {
@@ -34,12 +54,12 @@ actor {
     person2Name : Text;
     meals : [(Text, Text)];
   } {
-    let pairs : [(Text, Text)] = mealEntries.map(func (e) : (Text, Text) { (e.key, e.value) });
+    let pairs : [(Text, Text)] = mealEntries.map(func(e) { (e.key, e.value) });
     {
-      person1Name = person1Name;
-      person2Name = person2Name;
+      person1Name;
+      person2Name;
       meals = pairs;
-    }
+    };
   };
 
   public func setNames(name1 : Text, name2 : Text) : async () {
@@ -49,11 +69,11 @@ actor {
   };
 
   public func setMeal(key : Text, value : Text) : async () {
-    let filtered : [MealEntry] = mealEntries.filter(func (e) : Bool { e.key != key });
+    let filtered = mealEntries.filter(func(e) { e.key != key });
     if (value == "") {
       mealEntries := filtered;
     } else {
-      let singleton : [MealEntry] = [{ key = key; value = value }];
+      let singleton = [{ key; value }];
       mealEntries := filtered.concat(singleton);
     };
     touch();
@@ -65,20 +85,17 @@ actor {
   };
 
   public query func getShoppingList() : async [ShoppingItem] {
-    shoppingItems
+    shoppingItems;
   };
 
   public func addShoppingItem(id : Text, text : Text) : async () {
-    let singleton : [ShoppingItem] = [{ id = id; text = text; purchased = false }];
+    let singleton = [{ id; text; purchased = false }];
     shoppingItems := shoppingItems.concat(singleton);
     touch();
   };
 
   public func toggleShoppingItem(id : Text) : async () {
-    shoppingItems := shoppingItems.map(func (item) : ShoppingItem {
-      if (item.id == id) { { id = item.id; text = item.text; purchased = not item.purchased } }
-      else { item }
-    });
+    shoppingItems := shoppingItems.map(func(item) { if (item.id == id) { { id = item.id; text = item.text; purchased = not item.purchased } } else { item } });
     touch();
   };
 
@@ -88,25 +105,22 @@ actor {
   };
 
   public func clearTickedShoppingItems() : async () {
-    shoppingItems := shoppingItems.filter(func (item) : Bool { not item.purchased });
+    shoppingItems := shoppingItems.filter(func(item) { not item.purchased });
     touch();
   };
 
   public query func getHouseList() : async [ShoppingItem] {
-    houseItems
+    houseItems;
   };
 
   public func addHouseItem(id : Text, text : Text) : async () {
-    let singleton : [ShoppingItem] = [{ id = id; text = text; purchased = false }];
+    let singleton = [{ id; text; purchased = false }];
     houseItems := houseItems.concat(singleton);
     touch();
   };
 
   public func toggleHouseItem(id : Text) : async () {
-    houseItems := houseItems.map(func (item) : ShoppingItem {
-      if (item.id == id) { { id = item.id; text = item.text; purchased = not item.purchased } }
-      else { item }
-    });
+    houseItems := houseItems.map(func(item) { if (item.id == id) { { id = item.id; text = item.text; purchased = not item.purchased } } else { item } });
     touch();
   };
 
@@ -116,7 +130,69 @@ actor {
   };
 
   public func clearTickedHouseItems() : async () {
-    houseItems := houseItems.filter(func (item) : Bool { not item.purchased });
+    houseItems := houseItems.filter(func(item) { not item.purchased });
     touch();
   };
-}
+
+  public query func getDinnerIdeas() : async [DinnerIdea] {
+    dinnerIdeas;
+  };
+
+  public func addDinnerIdea(id : Text, name : Text, placeSeen : Text, link : Text) : async () {
+    let newIdea = {
+      id;
+      name;
+      placeSeen;
+      link;
+      thisWeek = false;
+    };
+    dinnerIdeas := dinnerIdeas.concat([newIdea]);
+    touch();
+  };
+
+  public func toggleDinnerIdeaThisWeek(id : Text) : async () {
+    dinnerIdeas := dinnerIdeas.map(func(idea) { if (idea.id == id) { { idea with thisWeek = not idea.thisWeek } } else { idea } });
+    touch();
+  };
+
+  public func removeDinnerIdea(id : Text) : async () {
+    dinnerIdeas := dinnerIdeas.filter(func(idea) { idea.id != id });
+    touch();
+  };
+
+  public func clearDinnerIdeas() : async () {
+    dinnerIdeas := [];
+    touch();
+  };
+
+  public query func getLunchIdeas() : async [LunchIdea] {
+    lunchIdeas;
+  };
+
+  public func addLunchIdea(id : Text, name : Text, placeSeen : Text, link : Text) : async () {
+    let newIdea = {
+      id;
+      name;
+      placeSeen;
+      link;
+      thisWeek = false;
+    };
+    lunchIdeas := lunchIdeas.concat([newIdea]);
+    touch();
+  };
+
+  public func toggleLunchIdeaThisWeek(id : Text) : async () {
+    lunchIdeas := lunchIdeas.map(func(idea) { if (idea.id == id) { { idea with thisWeek = not idea.thisWeek } } else { idea } });
+    touch();
+  };
+
+  public func removeLunchIdea(id : Text) : async () {
+    lunchIdeas := lunchIdeas.filter(func(idea) { idea.id != id });
+    touch();
+  };
+
+  public func clearLunchIdeas() : async () {
+    lunchIdeas := [];
+    touch();
+  };
+};

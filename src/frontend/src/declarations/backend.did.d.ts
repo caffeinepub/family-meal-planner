@@ -10,7 +10,59 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export interface _SERVICE {}
+export interface DinnerIdea {
+  'id' : string,
+  'placeSeen' : string,
+  'thisWeek' : boolean,
+  'link' : string,
+  'name' : string,
+}
+export interface LunchIdea {
+  'id' : string,
+  'placeSeen' : string,
+  'thisWeek' : boolean,
+  'link' : string,
+  'name' : string,
+}
+export interface ShoppingItem {
+  'id' : string,
+  'text' : string,
+  'purchased' : boolean,
+}
+export interface _SERVICE {
+  'addDinnerIdea' : ActorMethod<[string, string, string, string], undefined>,
+  'addHouseItem' : ActorMethod<[string, string], undefined>,
+  'addLunchIdea' : ActorMethod<[string, string, string, string], undefined>,
+  'addShoppingItem' : ActorMethod<[string, string], undefined>,
+  'clearDinnerIdeas' : ActorMethod<[], undefined>,
+  'clearHouseList' : ActorMethod<[], undefined>,
+  'clearLunchIdeas' : ActorMethod<[], undefined>,
+  'clearMeals' : ActorMethod<[], undefined>,
+  'clearShoppingList' : ActorMethod<[], undefined>,
+  'clearTickedHouseItems' : ActorMethod<[], undefined>,
+  'clearTickedShoppingItems' : ActorMethod<[], undefined>,
+  'getDinnerIdeas' : ActorMethod<[], Array<DinnerIdea>>,
+  'getHouseList' : ActorMethod<[], Array<ShoppingItem>>,
+  'getLastModified' : ActorMethod<[], bigint>,
+  'getLunchIdeas' : ActorMethod<[], Array<LunchIdea>>,
+  'getMealPlan' : ActorMethod<
+    [],
+    {
+      'meals' : Array<[string, string]>,
+      'person1Name' : string,
+      'person2Name' : string,
+    }
+  >,
+  'getShoppingList' : ActorMethod<[], Array<ShoppingItem>>,
+  'removeDinnerIdea' : ActorMethod<[string], undefined>,
+  'removeLunchIdea' : ActorMethod<[string], undefined>,
+  'setMeal' : ActorMethod<[string, string], undefined>,
+  'setNames' : ActorMethod<[string, string], undefined>,
+  'toggleDinnerIdeaThisWeek' : ActorMethod<[string], undefined>,
+  'toggleHouseItem' : ActorMethod<[string], undefined>,
+  'toggleLunchIdeaThisWeek' : ActorMethod<[string], undefined>,
+  'toggleShoppingItem' : ActorMethod<[string], undefined>,
+}
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];
 export declare const idlFactory: IDL.InterfaceFactory;

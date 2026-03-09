@@ -189,6 +189,8 @@
 [role="tabpanel"] {
   margin-top: 0 !important;
   padding-top: 0 !important;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
 }
 
 /* Kill the flex gap on the Tabs root so list and content sit flush */

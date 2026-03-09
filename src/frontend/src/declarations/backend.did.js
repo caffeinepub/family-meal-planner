@@ -8,10 +8,128 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const idlService = IDL.Service({});
+export const DinnerIdea = IDL.Record({
+  'id' : IDL.Text,
+  'placeSeen' : IDL.Text,
+  'thisWeek' : IDL.Bool,
+  'link' : IDL.Text,
+  'name' : IDL.Text,
+});
+export const ShoppingItem = IDL.Record({
+  'id' : IDL.Text,
+  'text' : IDL.Text,
+  'purchased' : IDL.Bool,
+});
+export const LunchIdea = IDL.Record({
+  'id' : IDL.Text,
+  'placeSeen' : IDL.Text,
+  'thisWeek' : IDL.Bool,
+  'link' : IDL.Text,
+  'name' : IDL.Text,
+});
+
+export const idlService = IDL.Service({
+  'addDinnerIdea' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
+  'addHouseItem' : IDL.Func([IDL.Text, IDL.Text], [], []),
+  'addLunchIdea' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
+  'addShoppingItem' : IDL.Func([IDL.Text, IDL.Text], [], []),
+  'clearDinnerIdeas' : IDL.Func([], [], []),
+  'clearHouseList' : IDL.Func([], [], []),
+  'clearLunchIdeas' : IDL.Func([], [], []),
+  'clearMeals' : IDL.Func([], [], []),
+  'clearShoppingList' : IDL.Func([], [], []),
+  'clearTickedHouseItems' : IDL.Func([], [], []),
+  'clearTickedShoppingItems' : IDL.Func([], [], []),
+  'getDinnerIdeas' : IDL.Func([], [IDL.Vec(DinnerIdea)], ['query']),
+  'getHouseList' : IDL.Func([], [IDL.Vec(ShoppingItem)], ['query']),
+  'getLastModified' : IDL.Func([], [IDL.Int], ['query']),
+  'getLunchIdeas' : IDL.Func([], [IDL.Vec(LunchIdea)], ['query']),
+  'getMealPlan' : IDL.Func(
+      [],
+      [
+        IDL.Record({
+          'meals' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
+          'person1Name' : IDL.Text,
+          'person2Name' : IDL.Text,
+        }),
+      ],
+      ['query'],
+    ),
+  'getShoppingList' : IDL.Func([], [IDL.Vec(ShoppingItem)], ['query']),
+  'removeDinnerIdea' : IDL.Func([IDL.Text], [], []),
+  'removeLunchIdea' : IDL.Func([IDL.Text], [], []),
+  'setMeal' : IDL.Func([IDL.Text, IDL.Text], [], []),
+  'setNames' : IDL.Func([IDL.Text, IDL.Text], [], []),
+  'toggleDinnerIdeaThisWeek' : IDL.Func([IDL.Text], [], []),
+  'toggleHouseItem' : IDL.Func([IDL.Text], [], []),
+  'toggleLunchIdeaThisWeek' : IDL.Func([IDL.Text], [], []),
+  'toggleShoppingItem' : IDL.Func([IDL.Text], [], []),
+});
 
 export const idlInitArgs = [];
 
-export const idlFactory = ({ IDL }) => { return IDL.Service({}); };
+export const idlFactory = ({ IDL }) => {
+  const DinnerIdea = IDL.Record({
+    'id' : IDL.Text,
+    'placeSeen' : IDL.Text,
+    'thisWeek' : IDL.Bool,
+    'link' : IDL.Text,
+    'name' : IDL.Text,
+  });
+  const ShoppingItem = IDL.Record({
+    'id' : IDL.Text,
+    'text' : IDL.Text,
+    'purchased' : IDL.Bool,
+  });
+  const LunchIdea = IDL.Record({
+    'id' : IDL.Text,
+    'placeSeen' : IDL.Text,
+    'thisWeek' : IDL.Bool,
+    'link' : IDL.Text,
+    'name' : IDL.Text,
+  });
+  
+  return IDL.Service({
+    'addDinnerIdea' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
+    'addHouseItem' : IDL.Func([IDL.Text, IDL.Text], [], []),
+    'addLunchIdea' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
+    'addShoppingItem' : IDL.Func([IDL.Text, IDL.Text], [], []),
+    'clearDinnerIdeas' : IDL.Func([], [], []),
+    'clearHouseList' : IDL.Func([], [], []),
+    'clearLunchIdeas' : IDL.Func([], [], []),
+    'clearMeals' : IDL.Func([], [], []),
+    'clearShoppingList' : IDL.Func([], [], []),
+    'clearTickedHouseItems' : IDL.Func([], [], []),
+    'clearTickedShoppingItems' : IDL.Func([], [], []),
+    'getDinnerIdeas' : IDL.Func([], [IDL.Vec(DinnerIdea)], ['query']),
+    'getHouseList' : IDL.Func([], [IDL.Vec(ShoppingItem)], ['query']),
+    'getLastModified' : IDL.Func([], [IDL.Int], ['query']),
+    'getLunchIdeas' : IDL.Func([], [IDL.Vec(LunchIdea)], ['query']),
+    'getMealPlan' : IDL.Func(
+        [],
+        [
+          IDL.Record({
+            'meals' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
+            'person1Name' : IDL.Text,
+            'person2Name' : IDL.Text,
+          }),
+        ],
+        ['query'],
+      ),
+    'getShoppingList' : IDL.Func([], [IDL.Vec(ShoppingItem)], ['query']),
+    'removeDinnerIdea' : IDL.Func([IDL.Text], [], []),
+    'removeLunchIdea' : IDL.Func([IDL.Text], [], []),
+    'setMeal' : IDL.Func([IDL.Text, IDL.Text], [], []),
+    'setNames' : IDL.Func([IDL.Text, IDL.Text], [], []),
+    'toggleDinnerIdeaThisWeek' : IDL.Func([IDL.Text], [], []),
+    'toggleHouseItem' : IDL.Func([IDL.Text], [], []),
+    'toggleLunchIdeaThisWeek' : IDL.Func([IDL.Text], [], []),
+    'toggleShoppingItem' : IDL.Func([IDL.Text], [], []),
+  });
+};
 
 export const init = ({ IDL }) => { return []; };
