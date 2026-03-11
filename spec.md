@@ -1,41 +1,33 @@
 # Family Meal Planner
 
 ## Current State
-The app has a full UI (planner, shopping list, for the house tabs) but all data is stored in `localStorage` on each device. This means changes made on one phone never appear on the other person's phone — there is no shared state.
-
-The backend was previously an empty actor with no methods. It has now been updated with a full Motoko implementation that stores all data server-side and exposes query/update functions.
+Dinner and Lunch Ideas tabs each have entries with two fields: Name and Link. Entries can be toggled to This Week. Backend stores `DinnerIdea` and `LunchIdea` with fields: id, name, placeSeen, link, thisWeek.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Backend integration: all reads and writes now go through the ICP canister backend instead of localStorage
-- Polling mechanism: poll `getLastModified()` every 5 seconds to detect remote changes, then fetch fresh data
-- Loading states when the app is first fetching data from the backend
+- `recipe` text field to `DinnerIdea` and `LunchIdea` types in backend
+- `updateDinnerIdeaRecipe(id, recipe)` and `updateLunchIdeaRecipe(id, recipe)` backend functions
+- Recipe textarea input in the add-entry form (name / link / recipe — three fields)
+- When a recipe is saved and non-empty, show a clickable "Recipe" text link on that row
+- Full-screen recipe overlay panel that slides over the whole app when Recipe link is tapped, showing: dish name at top, recipe text below, Edit button to edit the recipe text in-place, Back button to return
+- Recipe overlay must match the existing dark brown / gold / GFS Didot design
 
 ### Modify
-- `App.tsx`: Replace all `localStorage.getItem/setItem` calls with backend actor calls
-  - `loadMealPlan()` → `actor.getMealPlan()`
-  - `saveMealPlan()` / `setMeal` → `actor.setMeal(key, value)`
-  - `setNames` → `actor.setNames(name1, name2)`
-  - `clearMeals` → `actor.clearMeals()`
-  - `loadList(SHOPPING_KEY)` → `actor.getShoppingList()`
-  - Shopping list mutations → `actor.addShoppingItem`, `actor.toggleShoppingItem`, `actor.clearShoppingList`, `actor.clearTickedShoppingItems`
-  - House list mutations → `actor.addHouseItem`, `actor.toggleHouseItem`, `actor.clearHouseList`, `actor.clearTickedHouseItems`
-- Polling now compares `lastModified` bigint from backend to detect remote changes
-- `MealCell` should call `onSave` on blur as it does now, but `onSave` calls `actor.setMeal`
-- `ListPanel` should call backend functions directly via actor prop
+- `addDinnerIdea` and `addLunchIdea` backend calls to include recipe parameter
+- Pending refs in App.tsx to include recipe field
+- DinnerIdeasPanel and LunchIdeasPanel to pass recipe through and show recipe link/overlay
+- backend.d.ts to add recipe field and new update functions
 
 ### Remove
-- All `localStorage.getItem/setItem` logic
-- `STORAGE_KEY`, `SHOPPING_KEY`, `HOUSE_KEY` constants
-- `loadMealPlan()`, `saveMealPlan()`, `loadList()`, `saveList()` helper functions
+- Nothing removed
 
 ## Implementation Plan
-1. Import `useActor` hook in `App.tsx`
-2. Use `actor` from `useActor()` for all data operations
-3. On mount: fetch `getMealPlan()`, `getShoppingList()`, `getHouseList()` and set state
-4. Poll `getLastModified()` every 5s; if changed, re-fetch all data and update state
-5. All mutations call the appropriate actor method, then optimistically update local state
-6. Show a brief loading indicator while initial data is being fetched
-7. Handle errors gracefully (show toast on failure, keep UI responsive)
-8. Pass actor down to `ListPanel` via props so it can call backend directly
+1. Update `main.mo`: add `recipe` to both types, add recipe param to add functions, add `updateDinnerIdeaRecipe` and `updateLunchIdeaRecipe`
+2. Update `backend.d.ts`: add `recipe` field to interfaces, add new update function signatures
+3. Update `App.tsx`:
+   - Add `onUpdateRecipe` action to dinner/lunch actions
+   - Add recipe input to add forms (third field after link)
+   - Add RecipePage full-screen overlay component (name header, recipe text, edit toggle, back button)
+   - Show "Recipe" clickable link on rows that have a saved recipe
+   - Wire up RecipePage open/close state

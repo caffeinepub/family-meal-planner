@@ -13,6 +13,7 @@ export interface DinnerIdea {
     thisWeek: boolean;
     link: string;
     name: string;
+    recipe: string;
 }
 export interface ShoppingItem {
     id: string;
@@ -25,11 +26,12 @@ export interface LunchIdea {
     thisWeek: boolean;
     link: string;
     name: string;
+    recipe: string;
 }
 export interface backendInterface {
-    addDinnerIdea(id: string, name: string, placeSeen: string, link: string): Promise<void>;
+    addDinnerIdea(id: string, name: string, placeSeen: string, link: string, recipe: string): Promise<void>;
     addHouseItem(id: string, text: string): Promise<void>;
-    addLunchIdea(id: string, name: string, placeSeen: string, link: string): Promise<void>;
+    addLunchIdea(id: string, name: string, placeSeen: string, link: string, recipe: string): Promise<void>;
     addShoppingItem(id: string, text: string): Promise<void>;
     clearDinnerIdeas(): Promise<void>;
     clearHouseList(): Promise<void>;
@@ -56,4 +58,6 @@ export interface backendInterface {
     toggleHouseItem(id: string): Promise<void>;
     toggleLunchIdeaThisWeek(id: string): Promise<void>;
     toggleShoppingItem(id: string): Promise<void>;
+    updateDinnerIdeaRecipe(id: string, recipe: string): Promise<void>;
+    updateLunchIdeaRecipe(id: string, recipe: string): Promise<void>;
 }

@@ -16,11 +16,31 @@ actor {
     value : Text;
   };
 
+  // Legacy type (no recipe field) — kept so the existing stable var
+  // `dinnerIdeas`/`lunchIdeas` compiles without a type-mismatch error.
+  type DinnerIdeaV1 = {
+    id : Text;
+    name : Text;
+    placeSeen : Text;
+    link : Text;
+    thisWeek : Bool;
+  };
+
+  type LunchIdeaV1 = {
+    id : Text;
+    name : Text;
+    placeSeen : Text;
+    link : Text;
+    thisWeek : Bool;
+  };
+
+  // Current type
   type DinnerIdea = {
     id : Text;
     name : Text;
     placeSeen : Text;
     link : Text;
+    recipe : Text;
     thisWeek : Bool;
   };
 
@@ -29,6 +49,7 @@ actor {
     name : Text;
     placeSeen : Text;
     link : Text;
+    recipe : Text;
     thisWeek : Bool;
   };
 
@@ -37,9 +58,35 @@ actor {
   var mealEntries : [MealEntry] = [];
   var shoppingItems : [ShoppingItem] = [];
   var houseItems : [ShoppingItem] = [];
-  var dinnerIdeas : [DinnerIdea] = [];
-  var lunchIdeas : [LunchIdea] = [];
+
+  // Legacy stable vars — type kept as V1 so the upgrade is compatible.
+  // Data is migrated to *V2 vars on first postupgrade and then cleared.
+  var dinnerIdeas : [DinnerIdeaV1] = [];
+  var lunchIdeas : [LunchIdeaV1] = [];
+
+  // Current stable vars with recipe field
+  stable var dinnerIdeasV2 : [DinnerIdea] = [];
+  stable var lunchIdeasV2 : [LunchIdea] = [];
+
   var lastModified : Int = 0;
+
+  // One-time migration: copy V1 records into V2, adding recipe = ""
+  system func postupgrade() {
+    if (dinnerIdeasV2.size() == 0 and dinnerIdeas.size() > 0) {
+      dinnerIdeasV2 := dinnerIdeas.map(func(old : DinnerIdeaV1) : DinnerIdea {
+        { id = old.id; name = old.name; placeSeen = old.placeSeen;
+          link = old.link; recipe = ""; thisWeek = old.thisWeek }
+      });
+      dinnerIdeas := [];
+    };
+    if (lunchIdeasV2.size() == 0 and lunchIdeas.size() > 0) {
+      lunchIdeasV2 := lunchIdeas.map(func(old : LunchIdeaV1) : LunchIdea {
+        { id = old.id; name = old.name; placeSeen = old.placeSeen;
+          link = old.link; recipe = ""; thisWeek = old.thisWeek }
+      });
+      lunchIdeas := [];
+    };
+  };
 
   func touch() {
     lastModified := Time.now();
@@ -95,7 +142,10 @@ actor {
   };
 
   public func toggleShoppingItem(id : Text) : async () {
-    shoppingItems := shoppingItems.map(func(item) { if (item.id == id) { { id = item.id; text = item.text; purchased = not item.purchased } } else { item } });
+    shoppingItems := shoppingItems.map(func(item) {
+      if (item.id == id) { { id = item.id; text = item.text; purchased = not item.purchased } }
+      else { item }
+    });
     touch();
   };
 
@@ -120,7 +170,10 @@ actor {
   };
 
   public func toggleHouseItem(id : Text) : async () {
-    houseItems := houseItems.map(func(item) { if (item.id == id) { { id = item.id; text = item.text; purchased = not item.purchased } } else { item } });
+    houseItems := houseItems.map(func(item) {
+      if (item.id == id) { { id = item.id; text = item.text; purchased = not item.purchased } }
+      else { item }
+    });
     touch();
   };
 
@@ -135,64 +188,68 @@ actor {
   };
 
   public query func getDinnerIdeas() : async [DinnerIdea] {
-    dinnerIdeas;
+    dinnerIdeasV2;
   };
 
-  public func addDinnerIdea(id : Text, name : Text, placeSeen : Text, link : Text) : async () {
-    let newIdea = {
-      id;
-      name;
-      placeSeen;
-      link;
-      thisWeek = false;
-    };
-    dinnerIdeas := dinnerIdeas.concat([newIdea]);
+  public func addDinnerIdea(id : Text, name : Text, placeSeen : Text, link : Text, recipe : Text) : async () {
+    dinnerIdeasV2 := dinnerIdeasV2.concat([{ id; name; placeSeen; link; recipe; thisWeek = false }]);
+    touch();
+  };
+
+  public func updateDinnerIdeaRecipe(id : Text, recipe : Text) : async () {
+    dinnerIdeasV2 := dinnerIdeasV2.map(func(idea) {
+      if (idea.id == id) { { idea with recipe } } else { idea }
+    });
     touch();
   };
 
   public func toggleDinnerIdeaThisWeek(id : Text) : async () {
-    dinnerIdeas := dinnerIdeas.map(func(idea) { if (idea.id == id) { { idea with thisWeek = not idea.thisWeek } } else { idea } });
+    dinnerIdeasV2 := dinnerIdeasV2.map(func(idea) {
+      if (idea.id == id) { { idea with thisWeek = not idea.thisWeek } } else { idea }
+    });
     touch();
   };
 
   public func removeDinnerIdea(id : Text) : async () {
-    dinnerIdeas := dinnerIdeas.filter(func(idea) { idea.id != id });
+    dinnerIdeasV2 := dinnerIdeasV2.filter(func(idea) { idea.id != id });
     touch();
   };
 
   public func clearDinnerIdeas() : async () {
-    dinnerIdeas := [];
+    dinnerIdeasV2 := [];
     touch();
   };
 
   public query func getLunchIdeas() : async [LunchIdea] {
-    lunchIdeas;
+    lunchIdeasV2;
   };
 
-  public func addLunchIdea(id : Text, name : Text, placeSeen : Text, link : Text) : async () {
-    let newIdea = {
-      id;
-      name;
-      placeSeen;
-      link;
-      thisWeek = false;
-    };
-    lunchIdeas := lunchIdeas.concat([newIdea]);
+  public func addLunchIdea(id : Text, name : Text, placeSeen : Text, link : Text, recipe : Text) : async () {
+    lunchIdeasV2 := lunchIdeasV2.concat([{ id; name; placeSeen; link; recipe; thisWeek = false }]);
+    touch();
+  };
+
+  public func updateLunchIdeaRecipe(id : Text, recipe : Text) : async () {
+    lunchIdeasV2 := lunchIdeasV2.map(func(idea) {
+      if (idea.id == id) { { idea with recipe } } else { idea }
+    });
     touch();
   };
 
   public func toggleLunchIdeaThisWeek(id : Text) : async () {
-    lunchIdeas := lunchIdeas.map(func(idea) { if (idea.id == id) { { idea with thisWeek = not idea.thisWeek } } else { idea } });
+    lunchIdeasV2 := lunchIdeasV2.map(func(idea) {
+      if (idea.id == id) { { idea with thisWeek = not idea.thisWeek } } else { idea }
+    });
     touch();
   };
 
   public func removeLunchIdea(id : Text) : async () {
-    lunchIdeas := lunchIdeas.filter(func(idea) { idea.id != id });
+    lunchIdeasV2 := lunchIdeasV2.filter(func(idea) { idea.id != id });
     touch();
   };
 
   public func clearLunchIdeas() : async () {
-    lunchIdeas := [];
+    lunchIdeasV2 := [];
     touch();
   };
 };

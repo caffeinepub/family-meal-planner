@@ -187,10 +187,19 @@
 
 /* Remove any default gap between tab bar and tab content */
 [role="tabpanel"] {
+  display: flex !important;
+  flex-direction: column !important;
   margin-top: 0 !important;
   padding-top: 0 !important;
   justify-content: flex-start !important;
   align-items: flex-start !important;
+}
+
+[role="tabpanel"][data-state="active"] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
 }
 
 /* Kill the flex gap on the Tabs root so list and content sit flush */

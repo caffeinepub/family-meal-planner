@@ -25,11 +25,16 @@ import { Toaster } from "@/components/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useActor } from "@/hooks/useActor";
 import {
+  BookOpen,
+  Check,
+  ChevronLeft,
+  Edit2,
   ExternalLink,
   Heart,
   RefreshCw,
   Settings2,
   Trash2,
+  X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -312,10 +317,10 @@ function ListPanel({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.55, delay: 0.18 }}
-      className="rounded-sm overflow-hidden w-full"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.35 }}
+      className="rounded-sm overflow-hidden w-full self-start"
       data-ocid={`${ocidPrefix}.panel`}
     >
       {/* Section Header with action buttons — at the very top */}
@@ -481,6 +486,168 @@ function ListPanel({
   );
 }
 
+// ─── RecipePage overlay ───────────────────────────────────────────────────────
+
+interface RecipeOverlay {
+  id: string;
+  name: string;
+  recipe: string;
+  type: "dinner" | "lunch";
+}
+
+interface RecipePageProps {
+  overlay: RecipeOverlay | null;
+  onClose: () => void;
+  onSave: (
+    id: string,
+    recipe: string,
+    type: "dinner" | "lunch",
+  ) => Promise<void>;
+}
+
+function RecipePage({ overlay, onClose, onSave }: RecipePageProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const didotStyle = {
+    fontFamily: '"GFS Didot", Didot, "Bodoni MT", Georgia, serif',
+  };
+
+  const handleEdit = () => {
+    setDraft(overlay?.recipe ?? "");
+    setEditing(true);
+  };
+
+  const handleCancel = () => {
+    setEditing(false);
+    setDraft("");
+  };
+
+  const handleSave = async () => {
+    if (!overlay) return;
+    setSaving(true);
+    try {
+      await onSave(overlay.id, draft, overlay.type);
+      setEditing(false);
+    } catch {
+      toast.error("Could not save recipe — please try again");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {overlay && (
+        <motion.div
+          key="recipe-overlay"
+          initial={{ x: "100%" }}
+          animate={{ x: 0 }}
+          exit={{ x: "100%" }}
+          transition={{ type: "tween", duration: 0.3 }}
+          className="fixed inset-0 z-50 flex flex-col page-botanical overflow-hidden"
+          data-ocid="recipe.panel"
+        >
+          {/* Header */}
+          <div className="leopard-bg px-4 py-3 flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="shrink-0 text-amber-100/80 hover:text-amber-100 transition-colors p-1 -ml-1 rounded"
+              aria-label="Back"
+              data-ocid="recipe.close_button"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <h1
+              className="flex-1 font-bold text-amber-100 leading-none tracking-tight truncate"
+              style={{ ...didotStyle, fontSize: "clamp(1rem, 3vw, 1.4rem)" }}
+            >
+              {overlay.name}
+            </h1>
+            {!editing && (
+              <button
+                type="button"
+                onClick={handleEdit}
+                className="shrink-0 text-amber-100/70 hover:text-amber-100 transition-colors p-1 rounded"
+                aria-label="Edit recipe"
+                data-ocid="recipe.edit_button"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto px-4 py-5">
+            {editing ? (
+              <div className="flex flex-col gap-3">
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="Enter the recipe here…"
+                  className="w-full min-h-[200px] bg-card/60 border border-border/50 rounded-sm px-3 py-2 text-sm text-foreground placeholder:text-foreground/40 placeholder:italic resize-none outline-none focus:border-amber-300/50"
+                  style={didotStyle}
+                  data-ocid="recipe.editor"
+                  aria-label="Recipe text"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm bg-amber-300/20 hover:bg-amber-300/30 text-amber-200 rounded-sm transition-colors disabled:opacity-50"
+                    style={didotStyle}
+                    data-ocid="recipe.save_button"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm bg-foreground/10 hover:bg-foreground/20 text-foreground/70 rounded-sm transition-colors"
+                    style={didotStyle}
+                    data-ocid="recipe.cancel_button"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {overlay.recipe ? (
+                  <p
+                    className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed"
+                    style={didotStyle}
+                    data-ocid="recipe.section"
+                  >
+                    {overlay.recipe}
+                  </p>
+                ) : (
+                  <div
+                    className="text-center py-10"
+                    data-ocid="recipe.empty_state"
+                  >
+                    <p
+                      className="text-foreground/40 text-sm italic"
+                      style={didotStyle}
+                    >
+                      No recipe added yet. Tap the edit icon to add one.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ─── DinnerIdeasPanel ─────────────────────────────────────────────────────────
 
 interface DinnerIdeasPanelProps {
@@ -490,11 +657,15 @@ interface DinnerIdeasPanelProps {
     name: string,
     placeSeen: string,
     link: string,
+    recipe: string,
   ) => Promise<void>;
   onToggle: (id: string) => Promise<void>;
   onRemove: (id: string) => Promise<void>;
   onClearAll: () => Promise<void>;
+  onUpdateRecipe: (id: string, recipe: string) => Promise<void>;
+  onOpenRecipe: (idea: DinnerIdea) => void;
   onOptimisticUpdate: (updater: (prev: DinnerIdea[]) => DinnerIdea[]) => void;
+  onMarkPending: () => void;
 }
 
 function DinnerIdeasPanel({
@@ -503,14 +674,17 @@ function DinnerIdeasPanel({
   onToggle,
   onRemove,
   onClearAll,
+  onUpdateRecipe: _onUpdateRecipe,
+  onOpenRecipe,
   onOptimisticUpdate,
+  onMarkPending,
 }: DinnerIdeasPanelProps) {
   const [nameInput, setNameInput] = useState("");
-  const [placeInput, setPlaceInput] = useState("");
   const [linkInput, setLinkInput] = useState("");
+  const [recipeInput, setRecipeInput] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
-  const placeRef = useRef<HTMLInputElement>(null);
   const linkRef = useRef<HTMLInputElement>(null);
+  const recipeRef = useRef<HTMLInputElement>(null);
 
   useChangeNotify(JSON.stringify(ideas), "Dinner ideas");
 
@@ -525,17 +699,25 @@ function DinnerIdeasPanel({
     const newIdea: DinnerIdea = {
       id: `${Date.now()}-${Math.random()}`,
       name: trimmedName,
-      placeSeen: placeInput.trim(),
+      placeSeen: "",
       link: linkInput.trim(),
+      recipe: recipeInput.trim(),
       thisWeek: false,
     };
+    onMarkPending();
     onOptimisticUpdate((prev) => [...prev, newIdea]);
     setNameInput("");
-    setPlaceInput("");
     setLinkInput("");
+    setRecipeInput("");
     nameRef.current?.focus();
     try {
-      await onAdd(newIdea.id, newIdea.name, newIdea.placeSeen, newIdea.link);
+      await onAdd(
+        newIdea.id,
+        newIdea.name,
+        newIdea.placeSeen,
+        newIdea.link,
+        newIdea.recipe,
+      );
     } catch {
       onOptimisticUpdate((prev) => prev.filter((i) => i.id !== newIdea.id));
       toast.error("Could not save — please try again");
@@ -552,7 +734,7 @@ function DinnerIdeasPanel({
         handleAdd();
       } else {
         // Move to next field
-        const fields = [nameRef, placeRef, linkRef];
+        const fields = [nameRef, linkRef, recipeRef];
         const currentIndex = fields.findIndex(
           (r) => r.current === e.currentTarget,
         );
@@ -610,8 +792,8 @@ function DinnerIdeasPanel({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.55, delay: 0.1 }}
       className="flex flex-col gap-2"
       data-ocid="dinner_ideas.panel"
@@ -632,14 +814,6 @@ function DinnerIdeasPanel({
         <div className="bg-card/80">
           <ul className="divide-y divide-border/40">
             <AnimatePresence initial={false}>
-              {thisWeekIdeas.length === 0 && (
-                <li
-                  className="px-4 py-3 text-foreground/40 text-sm italic"
-                  style={didotStyle}
-                >
-                  No dinners selected for this week yet
-                </li>
-              )}
               {thisWeekIdeas.map((idea, index) => (
                 <motion.li
                   key={idea.id}
@@ -654,7 +828,7 @@ function DinnerIdeasPanel({
                     type="checkbox"
                     checked={true}
                     onChange={() => handleToggle(idea.id)}
-                    className="shopping-checkbox"
+                    className="shopping-checkbox shrink-0"
                     aria-label={`Remove "${idea.name}" from this week`}
                     data-ocid={`dinner_ideas.this_week.checkbox.${index + 1}`}
                   />
@@ -666,14 +840,6 @@ function DinnerIdeasPanel({
                       {idea.name}
                     </span>
                     <div className="flex items-center gap-2 flex-wrap">
-                      {idea.placeSeen && (
-                        <span
-                          className="text-xs text-foreground/50 italic"
-                          style={didotStyle}
-                        >
-                          {idea.placeSeen}
-                        </span>
-                      )}
                       {idea.link && (
                         <a
                           href={
@@ -691,6 +857,18 @@ function DinnerIdeasPanel({
                           <span>Link</span>
                         </a>
                       )}
+                      {idea.recipe && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenRecipe(idea)}
+                          className="text-xs text-amber-300/80 hover:text-amber-300 flex items-center gap-0.5 transition-colors italic"
+                          style={didotStyle}
+                          data-ocid={`lunch_ideas.this_week.recipe.${index + 1}`}
+                        >
+                          <BookOpen className="w-3 h-3" />
+                          <span>Recipe</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </motion.li>
@@ -700,7 +878,7 @@ function DinnerIdeasPanel({
         </div>
       </div>
 
-      {/* ── All Ideas Section ── */}
+      {/* ── All Recipes Section ── */}
       <div
         className="rounded-sm overflow-hidden"
         data-ocid="dinner_ideas.all_ideas.panel"
@@ -711,7 +889,7 @@ function DinnerIdeasPanel({
             className="font-bold text-amber-100 leading-none tracking-tight"
             style={{ ...didotStyle, fontSize: "clamp(1rem, 3vw, 1.4rem)" }}
           >
-            All Ideas
+            All Recipes
           </h2>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -774,29 +952,29 @@ function DinnerIdeasPanel({
             />
             <span className="text-foreground/20 text-xs shrink-0">/</span>
             <input
-              ref={placeRef}
-              type="text"
-              value={placeInput}
-              onChange={(e) => setPlaceInput(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, false)}
-              placeholder="Place seen…"
-              className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground/40 placeholder:italic"
-              style={didotStyle}
-              data-ocid="dinner_ideas.place.input"
-              aria-label="Place seen"
-            />
-            <span className="text-foreground/20 text-xs shrink-0">/</span>
-            <input
               ref={linkRef}
               type="text"
               value={linkInput}
               onChange={(e) => setLinkInput(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, true)}
+              onKeyDown={(e) => handleKeyDown(e, false)}
               placeholder="Link…"
               className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground/40 placeholder:italic"
               style={didotStyle}
               data-ocid="dinner_ideas.link.input"
               aria-label="Link"
+            />
+            <span className="text-foreground/20 text-xs shrink-0">/</span>
+            <input
+              ref={recipeRef}
+              type="text"
+              value={recipeInput}
+              onChange={(e) => setRecipeInput(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, true)}
+              placeholder="Recipe…"
+              className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground/40 placeholder:italic"
+              style={didotStyle}
+              data-ocid="dinner_ideas.recipe.input"
+              aria-label="Recipe"
             />
             <button
               type="button"
@@ -828,7 +1006,7 @@ function DinnerIdeasPanel({
                     type="checkbox"
                     checked={idea.thisWeek}
                     onChange={() => handleToggle(idea.id)}
-                    className="shopping-checkbox"
+                    className="shopping-checkbox shrink-0"
                     aria-label={`${idea.thisWeek ? "Remove" : "Add"} "${idea.name}" ${idea.thisWeek ? "from" : "to"} this week`}
                     data-ocid={`dinner_ideas.checkbox.${index + 1}`}
                   />
@@ -843,14 +1021,6 @@ function DinnerIdeasPanel({
                       {idea.name}
                     </span>
                     <div className="flex items-center gap-2 flex-wrap">
-                      {idea.placeSeen && (
-                        <span
-                          className="text-xs text-foreground/50 italic"
-                          style={didotStyle}
-                        >
-                          {idea.placeSeen}
-                        </span>
-                      )}
                       {idea.link && (
                         <a
                           href={
@@ -868,17 +1038,60 @@ function DinnerIdeasPanel({
                           <span>Link</span>
                         </a>
                       )}
+                      {idea.recipe && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenRecipe(idea)}
+                          className="text-xs text-amber-300/80 hover:text-amber-300 flex items-center gap-0.5 transition-colors italic"
+                          style={didotStyle}
+                          data-ocid={`dinner_ideas.recipe.${index + 1}`}
+                        >
+                          <BookOpen className="w-3 h-3" />
+                          <span>Recipe</span>
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(idea.id)}
-                    className="shrink-0 text-foreground/30 hover:text-destructive transition-colors p-1 rounded"
-                    aria-label={`Delete "${idea.name}"`}
-                    data-ocid={`dinner_ideas.delete_button.${index + 1}`}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        type="button"
+                        className="shrink-0 text-foreground/30 hover:text-destructive transition-colors p-1 rounded"
+                        aria-label={`Delete "${idea.name}"`}
+                        data-ocid={`dinner_ideas.delete_button.${index + 1}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent
+                      className="sm:max-w-md rounded-xl border-border"
+                      data-ocid="dinner_ideas.delete.dialog"
+                    >
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl text-foreground">
+                          Delete this recipe?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-muted-foreground">
+                          This cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter className="gap-2">
+                        <AlertDialogCancel
+                          className="rounded-lg"
+                          data-ocid="dinner_ideas.delete.cancel_button"
+                        >
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleRemove(idea.id)}
+                          className="rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          data-ocid="dinner_ideas.delete.confirm_button"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </motion.li>
               ))}
             </AnimatePresence>
@@ -898,11 +1111,15 @@ interface LunchIdeasPanelProps {
     name: string,
     placeSeen: string,
     link: string,
+    recipe: string,
   ) => Promise<void>;
   onToggle: (id: string) => Promise<void>;
   onRemove: (id: string) => Promise<void>;
   onClearAll: () => Promise<void>;
+  onUpdateRecipe: (id: string, recipe: string) => Promise<void>;
+  onOpenRecipe: (idea: LunchIdea) => void;
   onOptimisticUpdate: (updater: (prev: LunchIdea[]) => LunchIdea[]) => void;
+  onMarkPending: () => void;
 }
 
 function LunchIdeasPanel({
@@ -911,14 +1128,17 @@ function LunchIdeasPanel({
   onToggle,
   onRemove,
   onClearAll,
+  onUpdateRecipe: _onUpdateRecipe,
+  onOpenRecipe,
   onOptimisticUpdate,
+  onMarkPending,
 }: LunchIdeasPanelProps) {
   const [nameInput, setNameInput] = useState("");
-  const [placeInput, setPlaceInput] = useState("");
   const [linkInput, setLinkInput] = useState("");
+  const [recipeInput, setRecipeInput] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
-  const placeRef = useRef<HTMLInputElement>(null);
   const linkRef = useRef<HTMLInputElement>(null);
+  const recipeRef = useRef<HTMLInputElement>(null);
 
   useChangeNotify(JSON.stringify(ideas), "Lunch ideas");
 
@@ -933,17 +1153,25 @@ function LunchIdeasPanel({
     const newIdea: LunchIdea = {
       id: `${Date.now()}-${Math.random()}`,
       name: trimmedName,
-      placeSeen: placeInput.trim(),
+      placeSeen: "",
       link: linkInput.trim(),
+      recipe: recipeInput.trim(),
       thisWeek: false,
     };
+    onMarkPending();
     onOptimisticUpdate((prev) => [...prev, newIdea]);
     setNameInput("");
-    setPlaceInput("");
     setLinkInput("");
+    setRecipeInput("");
     nameRef.current?.focus();
     try {
-      await onAdd(newIdea.id, newIdea.name, newIdea.placeSeen, newIdea.link);
+      await onAdd(
+        newIdea.id,
+        newIdea.name,
+        newIdea.placeSeen,
+        newIdea.link,
+        newIdea.recipe,
+      );
     } catch {
       onOptimisticUpdate((prev) => prev.filter((i) => i.id !== newIdea.id));
       toast.error("Could not save — please try again");
@@ -959,7 +1187,7 @@ function LunchIdeasPanel({
       if (isLast) {
         handleAdd();
       } else {
-        const fields = [nameRef, placeRef, linkRef];
+        const fields = [nameRef, linkRef, recipeRef];
         const currentIndex = fields.findIndex(
           (r) => r.current === e.currentTarget,
         );
@@ -1017,8 +1245,8 @@ function LunchIdeasPanel({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.55, delay: 0.1 }}
       className="flex flex-col gap-2"
       data-ocid="lunch_ideas.panel"
@@ -1039,14 +1267,6 @@ function LunchIdeasPanel({
         <div className="bg-card/80">
           <ul className="divide-y divide-border/40">
             <AnimatePresence initial={false}>
-              {thisWeekIdeas.length === 0 && (
-                <li
-                  className="px-4 py-3 text-foreground/40 text-sm italic"
-                  style={didotStyle}
-                >
-                  No lunches selected for this week yet
-                </li>
-              )}
               {thisWeekIdeas.map((idea, index) => (
                 <motion.li
                   key={idea.id}
@@ -1061,7 +1281,7 @@ function LunchIdeasPanel({
                     type="checkbox"
                     checked={true}
                     onChange={() => handleToggle(idea.id)}
-                    className="shopping-checkbox"
+                    className="shopping-checkbox shrink-0"
                     aria-label={`Remove "${idea.name}" from this week`}
                     data-ocid={`lunch_ideas.this_week.checkbox.${index + 1}`}
                   />
@@ -1073,14 +1293,6 @@ function LunchIdeasPanel({
                       {idea.name}
                     </span>
                     <div className="flex items-center gap-2 flex-wrap">
-                      {idea.placeSeen && (
-                        <span
-                          className="text-xs text-foreground/50 italic"
-                          style={didotStyle}
-                        >
-                          {idea.placeSeen}
-                        </span>
-                      )}
                       {idea.link && (
                         <a
                           href={
@@ -1098,6 +1310,18 @@ function LunchIdeasPanel({
                           <span>Link</span>
                         </a>
                       )}
+                      {idea.recipe && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenRecipe(idea)}
+                          className="text-xs text-amber-300/80 hover:text-amber-300 flex items-center gap-0.5 transition-colors italic"
+                          style={didotStyle}
+                          data-ocid={`lunch_ideas.this_week.recipe.${index + 1}`}
+                        >
+                          <BookOpen className="w-3 h-3" />
+                          <span>Recipe</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </motion.li>
@@ -1107,7 +1331,7 @@ function LunchIdeasPanel({
         </div>
       </div>
 
-      {/* ── All Ideas Section ── */}
+      {/* ── All Recipes Section ── */}
       <div
         className="rounded-sm overflow-hidden"
         data-ocid="lunch_ideas.all_ideas.panel"
@@ -1118,7 +1342,7 @@ function LunchIdeasPanel({
             className="font-bold text-amber-100 leading-none tracking-tight"
             style={{ ...didotStyle, fontSize: "clamp(1rem, 3vw, 1.4rem)" }}
           >
-            All Ideas
+            All Recipes
           </h2>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -1181,29 +1405,29 @@ function LunchIdeasPanel({
             />
             <span className="text-foreground/20 text-xs shrink-0">/</span>
             <input
-              ref={placeRef}
-              type="text"
-              value={placeInput}
-              onChange={(e) => setPlaceInput(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, false)}
-              placeholder="Place seen…"
-              className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground/40 placeholder:italic"
-              style={didotStyle}
-              data-ocid="lunch_ideas.place.input"
-              aria-label="Place seen"
-            />
-            <span className="text-foreground/20 text-xs shrink-0">/</span>
-            <input
               ref={linkRef}
               type="text"
               value={linkInput}
               onChange={(e) => setLinkInput(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, true)}
+              onKeyDown={(e) => handleKeyDown(e, false)}
               placeholder="Link…"
               className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground/40 placeholder:italic"
               style={didotStyle}
               data-ocid="lunch_ideas.link.input"
               aria-label="Link"
+            />
+            <span className="text-foreground/20 text-xs shrink-0">/</span>
+            <input
+              ref={recipeRef}
+              type="text"
+              value={recipeInput}
+              onChange={(e) => setRecipeInput(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, true)}
+              placeholder="Recipe…"
+              className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground/40 placeholder:italic"
+              style={didotStyle}
+              data-ocid="lunch_ideas.recipe.input"
+              aria-label="Recipe"
             />
             <button
               type="button"
@@ -1235,7 +1459,7 @@ function LunchIdeasPanel({
                     type="checkbox"
                     checked={idea.thisWeek}
                     onChange={() => handleToggle(idea.id)}
-                    className="shopping-checkbox"
+                    className="shopping-checkbox shrink-0"
                     aria-label={`${idea.thisWeek ? "Remove" : "Add"} "${idea.name}" ${idea.thisWeek ? "from" : "to"} this week`}
                     data-ocid={`lunch_ideas.checkbox.${index + 1}`}
                   />
@@ -1250,14 +1474,6 @@ function LunchIdeasPanel({
                       {idea.name}
                     </span>
                     <div className="flex items-center gap-2 flex-wrap">
-                      {idea.placeSeen && (
-                        <span
-                          className="text-xs text-foreground/50 italic"
-                          style={didotStyle}
-                        >
-                          {idea.placeSeen}
-                        </span>
-                      )}
                       {idea.link && (
                         <a
                           href={
@@ -1275,17 +1491,60 @@ function LunchIdeasPanel({
                           <span>Link</span>
                         </a>
                       )}
+                      {idea.recipe && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenRecipe(idea)}
+                          className="text-xs text-amber-300/80 hover:text-amber-300 flex items-center gap-0.5 transition-colors italic"
+                          style={didotStyle}
+                          data-ocid={`lunch_ideas.recipe.${index + 1}`}
+                        >
+                          <BookOpen className="w-3 h-3" />
+                          <span>Recipe</span>
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(idea.id)}
-                    className="shrink-0 text-foreground/30 hover:text-destructive transition-colors p-1 rounded"
-                    aria-label={`Delete "${idea.name}"`}
-                    data-ocid={`lunch_ideas.delete_button.${index + 1}`}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        type="button"
+                        className="shrink-0 text-foreground/30 hover:text-destructive transition-colors p-1 rounded"
+                        aria-label={`Delete "${idea.name}"`}
+                        data-ocid={`lunch_ideas.delete_button.${index + 1}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent
+                      className="sm:max-w-md rounded-xl border-border"
+                      data-ocid="lunch_ideas.delete.dialog"
+                    >
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl text-foreground">
+                          Delete this recipe?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-muted-foreground">
+                          This cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter className="gap-2">
+                        <AlertDialogCancel
+                          className="rounded-lg"
+                          data-ocid="lunch_ideas.delete.cancel_button"
+                        >
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleRemove(idea.id)}
+                          className="rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          data-ocid="lunch_ideas.delete.confirm_button"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </motion.li>
               ))}
             </AnimatePresence>
@@ -1313,6 +1572,9 @@ export default function App() {
   const [houseItems, setHouseItems] = useState<ShoppingItem[]>([]);
   const [dinnerIdeas, setDinnerIdeas] = useState<DinnerIdea[]>([]);
   const [lunchIdeas, setLunchIdeas] = useState<LunchIdea[]>([]);
+  const [recipeOverlay, setRecipeOverlay] = useState<RecipeOverlay | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
 
   // ── UI state ───────────────────────────────────────────────────────────────
@@ -1326,6 +1588,9 @@ export default function App() {
   const lastModifiedRef = useRef<bigint | null>(null);
   // Flag to avoid showing "Updated by your partner" when we made the change
   const localWritePendingRef = useRef(false);
+  // Track ideas that have been added locally but may not yet be confirmed in backend
+  const dinnerPendingRef = useRef<Map<string, DinnerIdea>>(new Map());
+  const lunchPendingRef = useRef<Map<string, LunchIdea>>(new Map());
 
   // Debounced partner notification for the meal plan
   useChangeNotify(JSON.stringify(plan.meals), "Meal plan");
@@ -1352,8 +1617,26 @@ export default function App() {
     });
     setShoppingItems(shopping);
     setHouseItems(house);
-    setDinnerIdeas(dinners);
-    setLunchIdeas(lunches);
+    // Merge any locally-pending (in-flight) ideas so sync never wipes them
+    const mergedDinners = [...dinners];
+    for (const [pendingId, pendingIdea] of dinnerPendingRef.current) {
+      if (mergedDinners.find((d) => d.id === pendingId)) {
+        dinnerPendingRef.current.delete(pendingId); // confirmed saved
+      } else {
+        mergedDinners.push(pendingIdea); // keep locally-added item
+      }
+    }
+    setDinnerIdeas(mergedDinners);
+
+    const mergedLunches = [...lunches];
+    for (const [pendingId, pendingIdea] of lunchPendingRef.current) {
+      if (mergedLunches.find((l) => l.id === pendingId)) {
+        lunchPendingRef.current.delete(pendingId);
+      } else {
+        mergedLunches.push(pendingIdea);
+      }
+    }
+    setLunchIdeas(mergedLunches);
   }, []);
 
   useEffect(() => {
@@ -1395,15 +1678,19 @@ export default function App() {
       try {
         const lastMod = await actor.getLastModified();
         if (lastMod !== lastModifiedRef.current) {
+          // Always update the ref so we don't re-trigger on the same change
           lastModifiedRef.current = lastMod;
+
+          if (localWritePendingRef.current) {
+            // This change was made by us — skip fetchAllData so we don't
+            // overwrite the optimistic UI state before the write is confirmed
+            localWritePendingRef.current = false;
+            return;
+          }
+
           await fetchAllData(actor);
           setLastSynced(new Date());
-
-          // Only show "Updated by your partner" if the local user didn't just write
-          if (!localWritePendingRef.current) {
-            toast.info("Updated by your partner", { duration: 3000 });
-          }
-          localWritePendingRef.current = false;
+          toast.info("Updated by your partner", { duration: 3000 });
         }
       } catch {
         // Silently ignore poll errors — will retry next interval
@@ -1540,9 +1827,22 @@ export default function App() {
       name: string,
       placeSeen: string,
       link: string,
+      recipe: string,
     ) => {
+      dinnerPendingRef.current.set(id, {
+        id,
+        name,
+        placeSeen,
+        link,
+        recipe,
+        thisWeek: false,
+      });
       localWritePendingRef.current = true;
-      await actor?.addDinnerIdea(id, name, placeSeen, link);
+      try {
+        await actor?.addDinnerIdea(id, name, placeSeen, link, recipe);
+      } finally {
+        dinnerPendingRef.current.delete(id);
+      }
     },
     onToggle: async (id: string) => {
       localWritePendingRef.current = true;
@@ -1556,8 +1856,26 @@ export default function App() {
       localWritePendingRef.current = true;
       await actor?.clearDinnerIdeas();
     },
+    onUpdateRecipe: async (id: string, recipe: string) => {
+      localWritePendingRef.current = true;
+      setDinnerIdeas((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, recipe } : i)),
+      );
+      await actor?.updateDinnerIdeaRecipe(id, recipe);
+    },
+    onOpenRecipe: (idea: DinnerIdea) => {
+      setRecipeOverlay({
+        id: idea.id,
+        name: idea.name,
+        recipe: idea.recipe,
+        type: "dinner",
+      });
+    },
     onOptimisticUpdate: (updater: (prev: DinnerIdea[]) => DinnerIdea[]) => {
       setDinnerIdeas((prev) => updater(prev));
+    },
+    onMarkPending: () => {
+      localWritePendingRef.current = true;
     },
   };
 
@@ -1568,9 +1886,22 @@ export default function App() {
       name: string,
       placeSeen: string,
       link: string,
+      recipe: string,
     ) => {
+      lunchPendingRef.current.set(id, {
+        id,
+        name,
+        placeSeen,
+        link,
+        recipe,
+        thisWeek: false,
+      });
       localWritePendingRef.current = true;
-      await actor?.addLunchIdea(id, name, placeSeen, link);
+      try {
+        await actor?.addLunchIdea(id, name, placeSeen, link, recipe);
+      } finally {
+        lunchPendingRef.current.delete(id);
+      }
     },
     onToggle: async (id: string) => {
       localWritePendingRef.current = true;
@@ -1584,8 +1915,26 @@ export default function App() {
       localWritePendingRef.current = true;
       await actor?.clearLunchIdeas();
     },
+    onUpdateRecipe: async (id: string, recipe: string) => {
+      localWritePendingRef.current = true;
+      setLunchIdeas((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, recipe } : i)),
+      );
+      await actor?.updateLunchIdeaRecipe(id, recipe);
+    },
+    onOpenRecipe: (idea: LunchIdea) => {
+      setRecipeOverlay({
+        id: idea.id,
+        name: idea.name,
+        recipe: idea.recipe,
+        type: "lunch",
+      });
+    },
     onOptimisticUpdate: (updater: (prev: LunchIdea[]) => LunchIdea[]) => {
       setLunchIdeas((prev) => updater(prev));
+    },
+    onMarkPending: () => {
+      localWritePendingRef.current = true;
     },
   };
 
@@ -1594,9 +1943,27 @@ export default function App() {
     return <LoadingScreen />;
   }
 
+  const handleSaveRecipe = async (
+    id: string,
+    recipe: string,
+    type: "dinner" | "lunch",
+  ) => {
+    if (type === "dinner") {
+      await dinnerActions.onUpdateRecipe(id, recipe);
+    } else {
+      await lunchActions.onUpdateRecipe(id, recipe);
+    }
+    setRecipeOverlay((prev) => (prev ? { ...prev, recipe } : null));
+  };
+
   return (
     <div className="min-h-screen flex flex-col page-botanical overflow-x-hidden">
       <Toaster position="top-right" />
+      <RecipePage
+        overlay={recipeOverlay}
+        onClose={() => setRecipeOverlay(null)}
+        onSave={handleSaveRecipe}
+      />
 
       {/* ── Utility bar ────────────────────────────────────────────────── */}
       <div className="bg-primary/40">
@@ -1681,11 +2048,11 @@ export default function App() {
       </div>
 
       {/* ── Main Content ───────────────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-xl mx-auto px-3 pb-10 flex flex-col overflow-x-hidden">
+      <main className="w-full max-w-xl mx-auto px-3 pb-10 flex flex-col overflow-x-hidden">
         {/* ── Tab System ─────────────────────────────────────────────────── */}
         <Tabs
           defaultValue="planner"
-          className="flex flex-col flex-1 gap-0 w-full overflow-x-hidden min-w-0 [&>[data-slot=tabs-content]]:mt-0 [&>[data-slot=tabs-content]]:pt-0"
+          className="flex flex-col gap-0 w-full overflow-x-hidden min-w-0 [&>[data-slot=tabs-content]]:mt-0 [&>[data-slot=tabs-content]]:pt-0"
           style={{ gap: 0 }}
         >
           {/* Sticky tab bar — split across 2 rows */}
@@ -1763,12 +2130,12 @@ export default function App() {
           {/* ── Planner Tab ── */}
           <TabsContent
             value="planner"
-            className="flex flex-col gap-1.5 pt-3 w-full overflow-x-hidden"
+            className="!flex-none flex flex-col gap-1.5 pt-3 w-full overflow-x-hidden"
           >
             {/* Names header row */}
             <motion.div
               initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ duration: 0.4, delay: 0.05 }}
               className="leopard-bg rounded-sm overflow-hidden w-full"
               data-ocid="meal.table"
@@ -1806,7 +2173,7 @@ export default function App() {
               <motion.div
                 key={day}
                 initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ duration: 0.4, delay: 0.08 + dayIndex * 0.04 }}
                 className="rounded-sm overflow-hidden w-full overflow-x-hidden"
                 data-ocid={`meal.${dayIndex}.card`}
@@ -1886,7 +2253,7 @@ export default function App() {
           {/* ── Dinner Ideas Tab ── */}
           <TabsContent
             value="dinner-ideas"
-            className="flex flex-col mt-0 pt-0 justify-start items-start"
+            className="!flex-none flex flex-col mt-0 pt-0 justify-start items-start w-full"
             style={{ marginTop: 0, paddingTop: 0, gap: 0 }}
           >
             <DinnerIdeasPanel ideas={dinnerIdeas} {...dinnerActions} />
@@ -1895,7 +2262,7 @@ export default function App() {
           {/* ── Lunch Ideas Tab ── */}
           <TabsContent
             value="lunch-ideas"
-            className="flex flex-col mt-0 pt-0 justify-start items-start"
+            className="!flex-none flex flex-col mt-0 pt-0 justify-start items-start w-full"
             style={{ marginTop: 0, paddingTop: 0, gap: 0 }}
           >
             <LunchIdeasPanel ideas={lunchIdeas} {...lunchActions} />
@@ -1904,7 +2271,7 @@ export default function App() {
           {/* ── Shopping List Tab ── */}
           <TabsContent
             value="shopping"
-            className="flex flex-col mt-0 pt-0 justify-start items-start"
+            className="!flex-none flex flex-col mt-0 pt-0 justify-start items-start w-full"
             style={{ marginTop: 0, paddingTop: 0, gap: 0 }}
           >
             <ListPanel
@@ -1919,7 +2286,7 @@ export default function App() {
           {/* ── For the House Tab ── */}
           <TabsContent
             value="house"
-            className="flex flex-col mt-0 pt-0 justify-start items-start"
+            className="!flex-none flex flex-col mt-0 pt-0 justify-start items-start w-full"
             style={{ marginTop: 0, paddingTop: 0, gap: 0 }}
           >
             <ListPanel
